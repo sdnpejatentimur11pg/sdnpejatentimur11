@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Resmi SDN Pejaten Timur 11</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f4f7f6; }
+        header { background: #0056b3; color: white; padding: 2rem 1rem; text-align: center; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+        h2 { color: #333; }
+        .loading { font-style: italic; color: #666; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <header>
+        <h1 id="nama-sekolah">Memuat data...</h1>
+        <p id="alamat-sekolah"></p>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>Visi Sekolah</h2>
+            <p id="visi-sekolah" class="loading">Mengambil data dari Supabase...</p>
+        </div>
+    </div>
+
+    <script>
+        // 1. Masukkan URL dan Key Anda
+        const SUPABASE_URL = 'https://fznapkpqrhevuxthvott.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bmFwa3BxcmhldnV4dGh2b3R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMzg3MjEsImV4cCI6MjA4NjcxNDcyMX0.haR_vhREOeIf29r52sfPhX_3zsvXFNihayJu9JmGCzM'; // Gunakan key panjang Anda
+
+        // 2. GANTI NAMA VARIABEL di sini menjadi supabaseClient
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function fetchProfilSekolah() {
+            try {
+                // 3. Gunakan supabaseClient di sini juga
+                const { data, error } = await supabaseClient
+                    .from('profil_sekolah')
+                    .select('*')
+                    .limit(1)
+                    .single();
+
+                if (error) throw error;
+                // ... (kode sisanya tetap sama)
+
+                if (data) {
+                    document.getElementById('nama-sekolah').innerText = data.nama_sekolah;
+                    document.getElementById('alamat-sekolah').innerText = data.alamat;
+                    document.getElementById('visi-sekolah').innerText = data.visi;
+                    document.getElementById('visi-sekolah').classList.remove('loading');
+                }
+            } catch (error) {
+                console.error("Error mengambil data:", error.message);
+                document.getElementById('nama-sekolah').innerText = "SDN Pejaten Timur 11 (Offline Mode)";
+                document.getElementById('visi-sekolah').innerText = "Gagal memuat data. Pastikan konfigurasi Supabase benar.";
+            }
+        }
+
+        // Jalankan fungsi saat halaman dimuat
+        window.onload = fetchProfilSekolah;
+    </script>
+</body>
+</html>
