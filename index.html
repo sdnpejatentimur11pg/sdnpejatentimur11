@@ -3,66 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Website Resmi SDN Pejaten Timur 11</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f4f7f6; }
-        header { background: #0056b3; color: white; padding: 2rem 1rem; text-align: center; }
-        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem; }
-        h2 { color: #333; }
-        .loading { font-style: italic; color: #666; }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>SDN Pejaten Timur 11</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="no-scroll"> ```
+    <div id="preloader">
+        <div class="text-center">
+            <div class="loader-book mb-4">
+                <i class="fas fa-book-open text-primary"></i>
+            </div>
+            <h5 class="fw-bold text-primary mb-1" style="letter-spacing: 3px; animation: pulse-text 1.5s infinite alternate;">MEMUAT...</h5>
+            <small class="text-muted fw-medium">Menyiapkan Halaman Sekolah</small>
+        </div>
+    </div>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <img id="nav-logo" src="" alt="" class="rounded-circle bg-white p-1" style="height: 45px; width: 45px; object-fit: cover;">
+                <div class="d-flex flex-column">
+                    <span id="nav-nama" class="fw-bold fs-6"></span>
+                    <span id="nav-kota" style="font-size: 0.7rem; letter-spacing: 1px;" class="text-white-50 text-uppercase"></span>
+                </div>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto gap-1 bg-white bg-opacity-10 rounded-pill px-3 py-1 mt-2 mt-lg-0">
+                    <li class="nav-item"><a class="nav-link text-white fw-bold active" href="#beranda">Beranda</a></li>
+                    <li class="nav-item"><a class="nav-link text-white fw-bold" href="#profil">Profil</a></li>
+                    <li class="nav-item"><a class="nav-link text-white fw-bold" href="#informasi">Info</a></li>
+                    <li class="nav-item"><a class="nav-link text-white fw-bold" href="#pendidik">Guru</a></li>
+                    <li class="nav-item"><a class="nav-link text-white fw-bold" href="#prestasi">Prestasi</a></li>
+                    <li class="nav-item"><a class="nav-link text-white fw-bold" href="#kontak">Kontak</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-    <header>
-        <h1 id="nama-sekolah">Memuat data...</h1>
-        <p id="alamat-sekolah"></p>
-    </header>
+    <section id="beranda" class="hero-section text-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8" style="width: 100%;">
+                    <h1 id="hero-teks" class="display-3 fw-bold mb-4"></h1>
+                    <p id="hero-visi" class="lead mb-5 text-light opacity-75"></p>
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a href="#profil" class="btn btn-primary btn-lg rounded-pill px-4">Tentang Sekolah <i class="fas fa-arrow-right ms-2"></i></a>
+                        <a href="#kontak" class="btn btn-light btn-lg rounded-pill px-4">Hubungi Kami</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
+    <section class="py-5 mt-n5 position-relative" style="z-index: 2;">
+        <div class="container">
+            <div class="card bg-dark text-white p-4 p-md-5 rounded-5 shadow-lg">
+                <div class="row align-items-center">
+                    <div class="col-md-3 text-center mb-3 mb-md-0">
+                        <img id="kepsek-foto" src="" class="rounded-circle border border-4 border-danger" width="150" height="150" style="object-fit: cover;">
+                    </div>
+                    <div class="col-md-9">
+                        <h3 class="fw-bold">Sambutan Kepala Sekolah</h3>
+                        <p id="kepsek-nama" class="text-primary fw-bold mb-3"></p>
+                        <p id="kepsek-sambutan" class="text-white-50 lh-lg"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="informasi" class="py-5 bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <div>
+                    <h6 class="text-primary fw-bold text-uppercase">Kabar Sekolah</h6>
+                    <h2 class="section-title fw-bold">Pengumuman & Berita</h2>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm d-none d-md-block" type="button" data-bs-toggle="collapse" data-bs-target="#collapseArsip">
+                    Arsip Berita <i class="fas fa-history ms-1"></i>
+                </button>
+            </div>
+
+            <div id="news-featured" class="row g-4">
+                <div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>
+            </div>
+
+            <div class="collapse mt-4" id="collapseArsip">
+                <div class="card card-body bg-white border-0 shadow-sm">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-archive text-primary me-2"></i>Arsip Berita Lama</h5>
+                    <div id="news-archive-list" class="list-group list-group-flush"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pendidik" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h6 class="text-primary fw-bold text-uppercase">Pendidik & Tenaga Kependidikan</h6>
+                <h2 class="fw-bold section-title d-inline-block">Guru & Staff Pengajar</h2>
+            </div>
+            
+            <div id="rotating-teachers" class="row g-4 justify-content-center">
+                </div>
+
+            <div class="text-center mt-5">
+                <button class="btn btn-outline-primary rounded-pill px-5 py-2 fw-bold" onclick="openTeacherModal()">
+                    Lihat Direktori Lengkap <i class="fas fa-users ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section id="prestasi" class="py-5 bg-white">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <div>
+                    <h6 class="text-primary fw-bold text-uppercase">Hall of Fame</h6>
+                    <h2 class="section-title fw-bold">Prestasi Murid</h2>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm d-none d-md-block" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePrestasi">
+                    Lihat Prestasi Lainnya <i class="fas fa-chevron-down ms-1"></i>
+                </button>
+            </div>
+
+            <div id="prestasi-featured" class="row g-4">
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+            </div>
+
+            <div class="collapse mt-4" id="collapsePrestasi">
+                <div class="card card-body bg-light border-0 shadow-sm">
+                    <h5 class="fw-bold mb-3 text-secondary"><i class="fas fa-history me-2"></i>Daftar Prestasi Lainnya</h5>
+                    <div id="prestasi-archive-list" class="list-group list-group-flush rounded-3 bg-white shadow-sm overflow-hidden">
+                        </div>
+                </div>
+            </div>
+
+            <div class="d-md-none mt-4 text-center">
+                <button class="btn btn-outline-primary w-100 rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePrestasi">
+                    Lihat Semua Prestasi
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section id="kontak" class="py-5 bg-light">
+        <div class="container">
+            <div class="card border-0 shadow-lg overflow-hidden" style="border-radius: 2.5rem;">
+                <div class="row g-0">
+                    
+                    <div class="col-lg-6 bg-primary text-white p-5 d-flex flex-column justify-content-center">
+                        <h3 class="fw-bold mb-4 display-6">Hubungi Kami</h3>
+                        <p class="opacity-75 mb-5">Punya pertanyaan atau saran? Silakan kirimkan pesan kepada kami.</p>
+
+                        <div class="d-flex align-items-start gap-3 mb-4">
+                            <div class="bg-white bg-opacity-25 p-3 rounded-3">
+                                <i class="fas fa-map-marker-alt fa-lg"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Alamat</h6>
+                                <p id="kontak-alamat" class="small opacity-75 mb-0"></p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start gap-3 mb-5">
+                            <div class="bg-white bg-opacity-25 p-3 rounded-3">
+                                <i class="fas fa-clock fa-lg"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Jam Operasional</h6>
+                                <p id="kontak-jam" class="small opacity-75 mb-0"></p>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-4 border-top border-white border-opacity-25">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-comment-dots me-2"></i>Ulasan Terbaru</h6>
+                            <div id="messages-display" class="d-flex flex-column gap-3">
+                                <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2);">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small class="fw-bold">Memuat...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 bg-white p-5">
+                        <h3 class="fw-bold text-dark mb-4 display-6">Buku Tamu</h3>
+                        <form id="guestbook-form">
+                            <div class="mb-4">
+                                <label class="fw-bold small text-muted mb-2">Nama Lengkap</label>
+                                <input type="text" id="visitor-name" required 
+                                    class="form-control border-0 bg-light py-3 px-4 rounded-4" 
+                                    placeholder="Nama Anda"
+                                    style="font-size: 1rem;">
+                            </div>
+                            <div class="mb-4">
+                                <label class="fw-bold small text-muted mb-2">Pesan / Saran</label>
+                                <textarea id="visitor-message" required rows="4" 
+                                    class="form-control border-0 bg-light py-3 px-4 rounded-4" 
+                                    placeholder="Tulis pesan Anda..."
+                                    style="font-size: 1rem; resize: none;"></textarea>
+                            </div>
+                            <button type="submit" 
+                                class="btn btn-dark w-100 py-3 rounded-4 fw-bold shadow-sm hover-scale transition-all">
+                                Kirim Pesan <i class="fas fa-paper-plane ms-2"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-white pt-5 pb-4 border-top">
     <div class="container">
-        <div class="card">
-            <h2>Visi Sekolah</h2>
-            <p id="visi-sekolah" class="loading">Mengambil data dari Supabase...</p>
+        <div class="row g-4 mb-5">
+            
+            <div class="col-lg-3 col-md-6">
+                <img id="footer-logo" src="" class="mb-3 rounded-circle bg-light p-1" width="60" height="60" alt="">
+                <h5 id="footer-nama" class="fw-bold text-dark"></h5>
+                <p id="footer-visi" class="text-muted small mt-3 lh-lg"></p>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <h6 class="fw-bold text-dark mb-4">Tautan Cepat</h6>
+                <ul class="list-unstyled space-y-2">
+                    <li class="mb-2"><a href="#profil" class="text-decoration-none text-secondary hover-primary transition-all">Tentang Kami</a></li>
+                    <li class="mb-2"><a href="#pendidik" class="text-decoration-none text-secondary hover-primary transition-all">Guru & Staff</a></li>
+                    <li class="mb-2"><a href="#fasilitas" class="text-decoration-none text-secondary hover-primary transition-all">Fasilitas Sekolah</a></li>
+                    <li class="mb-2"><a href="#informasi" class="text-decoration-none text-secondary hover-primary transition-all">Pengumuman</a></li>
+                </ul>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <h6 class="fw-bold text-dark mb-4">Sosial Media</h6>
+                <div class="d-flex gap-4 align-items-center">
+                    <a id="footer-ig" href="#" target="_blank" class="text-decoration-none transition-all" style="display: none; transition: transform 0.2s;">
+                        <i class="fab fa-instagram fa-3x" style="background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                    </a>
+                    
+                    <a id="footer-yt" href="#" target="_blank" class="text-decoration-none transition-all" style="display: none; transition: transform 0.2s;">
+                        <i class="fab fa-youtube fa-3x" style="color: #FF0000;"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <h6 class="fw-bold text-dark mb-4">Admin Area</h6>
+                <a href="admin.html" class="text-secondary text-decoration-none small fw-bold d-flex align-items-center gap-2 hover-primary">
+                    <i class="fas fa-lock"></i> Login Administrator
+                </a>
+            </div>
+        </div>
+
+        <div class="border-top pt-4 text-center">
+            <p class="small text-muted mb-3">© 2025 SDN Pejaten Timur 11. Hak Cipta Dilindungi.</p>
+            
+            <div class="d-inline-flex align-items-center gap-2 bg-dark text-white px-3 py-1 rounded-pill small">
+                <i class="fas fa-users" style="font-size: 0.8rem;"></i>
+                <span>Pengunjung: <span id="visitor-count" class="fw-bold">...</span></span>
+            </div>
+        </div>
+    </div>
+</footer>
+
+    <div class="modal fade" id="newsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 overflow-hidden shadow-lg">
+                <div class="modal-header border-0 position-absolute end-0 top-0 z-3">
+                    <button type="button" class="btn-close bg-white p-2 shadow-sm" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="modal-body p-0 bg-light text-center d-flex align-items-center justify-content-center" style="height: 250px;">
+                    <img id="modal-news-img" src="" alt="Berita" 
+                        class="img-fluid" 
+                        style="max-height: 100%; width: 100%; object-fit: contain; padding: 1.5rem;">
+                </div>
+                <div class="modal-body p-4 p-md-5">
+                    <span id="modal-news-date" class="badge bg-danger mb-2 px-3 py-2 rounded-pill"></span>
+                    <h3 id="modal-news-title" class="fw-bold mb-3 text-dark lh-sm"></h3>
+                    <div id="modal-news-content" class="text-muted" style="white-space: pre-wrap; font-size: 1rem; line-height: 1.8;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script>
-        // 1. Masukkan URL dan Key Anda
-        const SUPABASE_URL = 'https://fznapkpqrhevuxthvott.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bmFwa3BxcmhldnV4dGh2b3R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMzg3MjEsImV4cCI6MjA4NjcxNDcyMX0.haR_vhREOeIf29r52sfPhX_3zsvXFNihayJu9JmGCzM'; // Gunakan key panjang Anda
+    <div class="modal fade" id="teacherModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content rounded-4">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Direktori Guru & Staff</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light" id="modal-teacher-content">
+                    </div>
+            </div>
+        </div>
+    </div>
 
-        // 2. GANTI NAMA VARIABEL di sini menjadi supabaseClient
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <div class="modal fade" id="prestasiModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 rounded-4 overflow-hidden shadow-lg">
+                <div class="modal-header border-0 position-absolute end-0 top-0 z-3">
+                    <button type="button" class="btn-close bg-white p-2 shadow-sm" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="modal-body p-0 bg-light text-center d-flex align-items-center justify-content-center position-relative" style="min-height: 300px;">
+                    <img id="modal-prestasi-img" src="" alt="Prestasi" 
+                        class="img-fluid shadow-sm" 
+                        style="max-height: 50vh; width: 100%; object-fit: contain; padding: 1rem;">
+                    <span id="modal-prestasi-category" class="badge bg-warning text-dark position-absolute bottom-0 start-0 m-4 fs-6 shadow-sm"></span>
+                </div>
+                
+                <div class="modal-body p-4 p-md-5">
+                    <h3 id="modal-prestasi-title" class="fw-bold mb-4 text-dark lh-sm"></h3>
+                    <div id="modal-prestasi-content" class="text-dark" style="font-size: 1rem; line-height: 1.8;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        async function fetchProfilSekolah() {
-            try {
-                // 3. Gunakan supabaseClient di sini juga
-                const { data, error } = await supabaseClient
-                    .from('profil_sekolah')
-                    .select('*')
-                    .limit(1)
-                    .single();
-
-                if (error) throw error;
-                // ... (kode sisanya tetap sama)
-
-                if (data) {
-                    document.getElementById('nama-sekolah').innerText = data.nama_sekolah;
-                    document.getElementById('alamat-sekolah').innerText = data.alamat;
-                    document.getElementById('visi-sekolah').innerText = data.visi;
-                    document.getElementById('visi-sekolah').classList.remove('loading');
-                }
-            } catch (error) {
-                console.error("Error mengambil data:", error.message);
-                document.getElementById('nama-sekolah').innerText = "SDN Pejaten Timur 11 (Offline Mode)";
-                document.getElementById('visi-sekolah').innerText = "Gagal memuat data. Pastikan konfigurasi Supabase benar.";
-            }
-        }
-
-        // Jalankan fungsi saat halaman dimuat
-        window.onload = fetchProfilSekolah;
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
 </body>
 </html>
