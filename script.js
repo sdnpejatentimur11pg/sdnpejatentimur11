@@ -77,6 +77,16 @@ async function fetchProfilSekolah() {
             if (data.logo_url) {
                 document.getElementById('nav-logo').src = data.logo_url;
                 document.getElementById('footer-logo').src = data.logo_url;
+
+                // --- TAMBAHAN KODE UNTUK ICON TAB BROWSER (FAVICON) ---
+                let favicon = document.querySelector("link[rel~='icon']");
+                if (!favicon) {
+                    favicon = document.createElement('link');
+                    favicon.rel = 'icon';
+                    document.head.appendChild(favicon);
+                }
+                favicon.href = data.logo_url;
+                // ------------------------------------------------------
             }
 
             // Teks Utama & Visi
