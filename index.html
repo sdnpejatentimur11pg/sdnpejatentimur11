@@ -22,7 +22,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="#">
-                <img id="nav-logo" src="" alt="" class="rounded-circle bg-white p-1" style="height: 45px; width: 45px; object-fit: cover;">
+                <img id="nav-logo" src="" alt="" style="height: 45px; width: 45px; object-fit: cover;">
                 <div class="d-flex flex-column">
                     <span id="nav-nama" class="fw-bold fs-6"></span>
                     <span id="nav-kota" style="font-size: 0.7rem; letter-spacing: 1px;" class="text-white-50 text-uppercase"></span>
@@ -153,6 +153,48 @@
         </div>
     </section>
 
+    <section id="galeri" class="py-5 bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <div>
+                    <h6 class="text-primary fw-bold text-uppercase">Momen Bermakna</h6>
+                    <h2 class="section-title fw-bold">Galeri Kegiatan</h2>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm d-none d-md-block" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGaleri">
+                    Lihat Galeri Lengkap <i class="fas fa-images ms-1"></i>
+                </button>
+            </div>
+
+            <div id="galeri-featured" class="row g-4">
+                <div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>
+            </div>
+
+            <div class="collapse mt-4" id="collapseGaleri">
+                <div class="row g-4" id="galeri-archive-list"></div>
+            </div>
+            
+            <div class="d-md-none mt-4 text-center">
+                <button class="btn btn-outline-primary w-100 rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGaleri">
+                    Semua Galeri
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade" id="galeriLihatModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 rounded-4 shadow-lg bg-dark">
+                <div class="modal-header border-0 pb-0 position-absolute end-0 top-0 z-3">
+                    <button type="button" class="btn-close btn-close-white bg-dark p-2 shadow-sm rounded-circle m-3" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 p-md-5">
+                    <h3 id="modal-lihat-gal-title" class="fw-bold mb-4 text-white"></h3>
+                    <div id="modal-lihat-gal-grid" class="justified-gallery"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <section id="kontak" class="py-5 bg-light">
         <div class="container">
             <div class="card border-0 shadow-lg overflow-hidden" style="border-radius: 2.5rem;">
@@ -172,6 +214,26 @@
                             </div>
                         </div>
 
+                        <div class="d-flex align-items-start gap-3 mb-4">
+                            <div class="bg-white bg-opacity-25 p-3 rounded-3">
+                                <i class="fas fa-phone-alt fa-lg"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Telepon</h6>
+                                <p id="kontak-telp" class="small opacity-75 mb-0"></p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start gap-3 mb-4">
+                            <div class="bg-white bg-opacity-25 p-3 rounded-3">
+                                <i class="fas fa-envelope fa-lg"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Email</h6>
+                                <p id="kontak-email" class="small opacity-75 mb-0"></p>
+                            </div>
+                        </div>
+
                         <div class="d-flex align-items-start gap-3 mb-5">
                             <div class="bg-white bg-opacity-25 p-3 rounded-3">
                                 <i class="fas fa-clock fa-lg"></i>
@@ -181,7 +243,6 @@
                                 <p id="kontak-jam" class="small opacity-75 mb-0"></p>
                             </div>
                         </div>
-
                         <div class="mt-auto pt-4 border-top border-white border-opacity-25">
                             <h6 class="fw-bold mb-3"><i class="fas fa-comment-dots me-2"></i>Ulasan Terbaru</h6>
                             <div id="messages-display" class="d-flex flex-column gap-3">

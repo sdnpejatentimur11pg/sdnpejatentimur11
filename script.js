@@ -1,175 +1,143 @@
-// Konfigurasi Supabase
+// --- 1. KONFIGURASI SUPABASE ---
 const SUPABASE_URL = 'https://fznapkpqrhevuxthvott.supabase.co';
-// GANTI teks di bawah dengan Anon Key panjang Anda
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bmFwa3BxcmhldnV4dGh2b3R0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMzg3MjEsImV4cCI6MjA4NjcxNDcyMX0.haR_vhREOeIf29r52sfPhX_3zsvXFNihayJu9JmGCzM'; 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Variabel Global
+// --- 2. VARIABEL GLOBAL ---
 let allTeachers = [];
 let allNewsData = [];
+let allPrestasiData = [];
 let teacherRotateInterval;
 
-// Format Text Helper (Untuk Prestasi)
-function formatText(text) {
-    if (!text) return "";
-    return text.replace(/\n/g, '<br>')
-               .replace(/\*(.*?)\*/g, '<b>$1</b>')
-               .replace(/_(.*?)_/g, '<i class="text-danger">$1</i>');
-}
-
-// Menjalankan fungsi saat website dimuat
+// --- 3. INISIALISASI (saat web dimuat) ---
 document.addEventListener('DOMContentLoaded', () => {
     fetchProfilSekolah();
     fetchTeachers();
     fetchNews();
     fetchPrestasi();
+    fetchGaleri();
     fetchMessages();
     updateVisitorCount();
+    setupGuestbookForm();
+});
 
-    // Setup Form Buku Tamu
-    const guestbookForm = document.getElementById('guestbook-form');
-    if (guestbookForm) {
-        guestbookForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            const originalText = btn.innerHTML;
-            btn.disabled = true; 
-            btn.innerHTML = 'Mengirim...';
-
-            const payload = {
-                name: document.getElementById('visitor-name').value,
-                message: document.getElementById('visitor-message').value
-            };
-
-            try {
-                const { error } = await supabaseClient.from('buku_tamu').insert([payload]);
-                if(error) throw error;
-                
-                alert("Pesan terkirim! Terima kasih.");
-                e.target.reset();
-                fetchMessages(); 
-            } catch(err) { 
-                console.error("Gagal kirim buku tamu:", err);
-                alert("Gagal mengirim pesan."); 
-            } finally {
-                btn.disabled = false; 
-                btn.innerHTML = originalText;
-            }
-        });
+// Event load untuk menghilangkan Preloader
+window.addEventListener('load', () => {
+    const preloader = document.getElementById('preloader');
+    if (preloader) {
+        setTimeout(() => {
+            preloader.classList.add('hidden'); 
+            document.body.classList.remove('no-scroll'); 
+        }, 500);
     }
 });
 
-/* --- DATA PROFIL SEKOLAH --- */
+// --- 4. FUNGSI PENGAMBILAN DATA (FETCH) ---
+
+// A. Profil Sekolah
 async function fetchProfilSekolah() {
     try {
         const { data, error } = await supabaseClient.from('profil_sekolah').select('*').eq('id', 1).single();
         if (error) throw error;
+        if (!data) return;
 
-        if (data) {
-            // Navbar & Footer Teks
-            if (data.nama_sekolah) {
-                document.getElementById('nav-nama').innerText = data.nama_sekolah;
-                document.getElementById('footer-nama').innerText = data.nama_sekolah;
-            }
-            if (data.kota) document.getElementById('nav-kota').innerText = data.kota;
+        // Navbar & Footer Teks
+        if (data.nama_sekolah) {
+            document.getElementById('nav-nama').innerText = data.nama_sekolah;
+            document.getElementById('footer-nama').innerText = data.nama_sekolah;
+        }
+        if (data.kota) document.getElementById('nav-kota').innerText = data.kota;
+        
+        // Logo & Favicon
+        if (data.logo_url) {
+            document.getElementById('nav-logo').src = data.logo_url;
+            document.getElementById('footer-logo').src = data.logo_url;
             
-            // Logo
-            if (data.logo_url) {
-                document.getElementById('nav-logo').src = data.logo_url;
-                document.getElementById('footer-logo').src = data.logo_url;
+            let favicon = document.querySelector("link[rel~='icon']");
+            if (!favicon) {
+                favicon = document.createElement('link');
+                favicon.rel = 'icon';
+                document.head.appendChild(favicon);
+            }
+            favicon.href = data.logo_url;
+        }
 
-                // --- TAMBAHAN KODE UNTUK ICON TAB BROWSER (FAVICON) ---
-                let favicon = document.querySelector("link[rel~='icon']");
-                if (!favicon) {
-                    favicon = document.createElement('link');
-                    favicon.rel = 'icon';
-                    document.head.appendChild(favicon);
-                }
-                favicon.href = data.logo_url;
-                // ------------------------------------------------------
-            }
+        // Teks Utama & Visi
+        if (data.teks_utama) document.getElementById('hero-teks').innerHTML = data.teks_utama;
+        if (data.deskripsi_utama) {
+            const heroEl = document.getElementById('hero-visi');
+            if (heroEl) heroEl.innerText = data.deskripsi_utama;
+            const footerEl = document.getElementById('footer-visi');
+            if (footerEl) footerEl.innerText = data.deskripsi_utama;
+        }
 
-            // Teks Utama & Visi
-            if (data.teks_utama) document.getElementById('hero-teks').innerHTML = data.teks_utama;
-            if (data.deskripsi_utama) {
-                const heroEl = document.getElementById('hero-visi');
-                if (heroEl) heroEl.innerText = data.deskripsi_utama;
-                const footerEl = document.getElementById('footer-visi');
-                if (footerEl) footerEl.innerText = data.deskripsi_utama;
+        // Background Hero
+        if (data.hero_bg_url) {
+            const heroSection = document.getElementById('beranda');
+            if (heroSection) {
+                heroSection.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url('${data.hero_bg_url}')`;
             }
+        }
 
-            // Kepsek
-            if (data.nama_kepsek) document.getElementById('kepsek-nama').innerText = data.nama_kepsek;
-            if (data.foto_kepsek) document.getElementById('kepsek-foto').src = data.foto_kepsek;
-            if (data.sambutan_kepsek) document.getElementById('kepsek-sambutan').innerHTML = data.sambutan_kepsek;
+        // Kepsek
+        if (data.nama_kepsek) document.getElementById('kepsek-nama').innerText = data.nama_kepsek;
+        if (data.foto_kepsek) document.getElementById('kepsek-foto').src = data.foto_kepsek;
+        if (data.sambutan_kepsek) document.getElementById('kepsek-sambutan').innerHTML = data.sambutan_kepsek;
 
-            // Kontak & Alamat
-            if (data.jalan || data.kota) {
-                const susunanAlamat = [
-                    data.jalan,
-                    data.kelurahan ? `Kel. ${data.kelurahan}` : '',
-                    data.kecamatan ? `Kec. ${data.kecamatan}` : '',
-                    data.kota,
-                    data.provinsi
-                ].filter(Boolean).join(', ');
-                document.getElementById('kontak-alamat').innerText = susunanAlamat;
-            }
-            if (data.jam_operasional) document.getElementById('kontak-jam').innerText = data.jam_operasional;
-            
-            // Sosial Media
-            const btnIg = document.getElementById('footer-ig');
-            const btnYt = document.getElementById('footer-yt');
-            
-            if (btnIg) {
-                btnIg.href = data.instagram || '#';
-                btnIg.style.display = data.instagram ? 'flex' : 'none';
-            }
-            if (btnYt) {
-                btnYt.href = data.youtube || '#';
-                btnYt.style.display = data.youtube ? 'flex' : 'none';
-            }
+        // Kontak & Alamat
+        if (data.jalan || data.kota) {
+            const susunanAlamat = [
+                data.jalan,
+                data.kelurahan ? `Kel. ${data.kelurahan}` : '',
+                data.kecamatan ? `Kec. ${data.kecamatan}` : '',
+                data.kota,
+                data.provinsi
+            ].filter(Boolean).join(', ');
+            document.getElementById('kontak-alamat').innerText = susunanAlamat;
+        }
+        
+        // --- TAMBAHKAN BARIS INI UNTUK TELEPON/EMAIL ---
+        if (data.kontak) document.getElementById('kontak-telp').innerText = data.kontak;
+        if (data.email) document.getElementById('kontak-email').innerText = data.email;
+        // -----------------------------------------------
+
+        if (data.jam_operasional) document.getElementById('kontak-jam').innerText = data.jam_operasional;
+        
+        // Sosial Media
+        const btnIg = document.getElementById('footer-ig');
+        const btnYt = document.getElementById('footer-yt');
+        if (btnIg) {
+            btnIg.href = data.instagram || '#';
+            btnIg.style.display = data.instagram ? 'flex' : 'none';
+        }
+        if (btnYt) {
+            btnYt.href = data.youtube || '#';
+            btnYt.style.display = data.youtube ? 'flex' : 'none';
         }
     } catch (e) {
         console.error("Gagal mengambil data profil:", e);
     }
 }
 
-/* --- DATA GURU --- */
-// Fungsi untuk menentukan teks jabatan (Aman dari error null)
+// B. Data Guru
 function getTeksJabatan(t) {
     if (t.jabatan === 'Guru Kelas') {
-        // Jika Guru Kelas, ambil nama kelasnya
         const namaKelas = t.guru_mengajar?.[0]?.kelas?.nama_kelas || 'Belum ditugaskan';
         return `Guru ${namaKelas}`; 
-        
     } else if (t.jabatan === 'Guru Mata Pelajaran') {
-        // Jika Guru Mapel, tambahkan kata "Guru" di depan nama mapelnya
-        const namaMapel = t.mapel || 'Mata Pelajaran';
-        return `Guru ${namaMapel}`; 
-        
+        return `Guru ${t.mapel || 'Mata Pelajaran'}`; 
     } else {
-        // Jika Tenaga Kependidikan (Staff), tampilkan tugas aslinya (misal: Penjaga Sekolah)
         return t.mapel || t.jabatan || 'Tenaga Kependidikan'; 
     }
 }
 
 async function fetchTeachers() {
     try {
-        const { data, error } = await supabaseClient
-            .from('guru')
-            .select(`
-                *,
-                guru_mengajar (
-                    kelas (nama_kelas)
-                )
-            `);
-            
+        const { data, error } = await supabaseClient.from('guru').select(`*, guru_mengajar ( kelas (nama_kelas) )`);
         if (error) throw error;
         allTeachers = data || [];
         
         renderRotatingTeachers();
-        
-        // Mencegah interval bertumpuk
         if(teacherRotateInterval) clearInterval(teacherRotateInterval);
         teacherRotateInterval = setInterval(renderRotatingTeachers, 6000); 
     } catch(e) { console.error("Gagal load guru:", e); }
@@ -178,14 +146,12 @@ async function fetchTeachers() {
 function renderRotatingTeachers() {
     const container = document.getElementById('rotating-teachers');
     if(!container) return;
-
     if(allTeachers.length === 0) {
         container.innerHTML = '<div class="col-12 text-center text-muted">Belum ada data pendidik.</div>';
         return;
     }
 
     const shuffled = [...allTeachers].sort(() => 0.5 - Math.random()).slice(0, 3);
-    
     container.innerHTML = shuffled.map(t => {
         const teksJabatan = getTeksJabatan(t);
         const namaAman = t.nama || 'Guru';
@@ -193,7 +159,7 @@ function renderRotatingTeachers() {
         
         return `
         <div class="col-md-4 animate-fade">
-            <div class="card h-100 text-center p-4 border-0 shadow-sm rounded-4" style="transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div class="card h-100 text-center p-4 border-0 shadow-sm rounded-4">
                 <img src="${fotoUrl}" class="rounded-circle mx-auto mb-3 border p-1" width="100" height="100" style="object-fit:cover;">
                 <h5 class="fw-bold mb-1 text-dark">${namaAman}</h5>
                 <small class="text-primary fw-bold text-uppercase">${teksJabatan}</small>
@@ -208,9 +174,7 @@ window.openTeacherModal = function() {
     const content = document.getElementById('modal-teacher-content');
     if (!modalEl || !content) return;
     
-    const modal = new bootstrap.Modal(modalEl);
     let html = '';
-    
     const renderSec = (title, list) => {
         if(!list.length) return '';
         return `<h5 class="fw-bold border-bottom pb-2 mb-3 mt-4 text-primary">${title}</h5>
@@ -219,7 +183,6 @@ window.openTeacherModal = function() {
                         const teksJabatan = getTeksJabatan(t);
                         const namaAman = t.nama || 'Guru';
                         const fotoUrl = t.foto_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(namaAman)}&background=random&color=fff`;
-                        
                         return `
                     <div class="col-md-6 col-lg-4">
                         <div class="d-flex align-items-center gap-3 bg-white p-3 rounded shadow-sm border">
@@ -234,37 +197,25 @@ window.openTeacherModal = function() {
                 </div>`;
     };
 
-    // A. Kelompokkan Guru Kelas 1-6 dengan aman
+    // Guru Kelas 1-6 berurutan
     for(let i=1; i<=6; i++) {
-        let guruKelasIni = allTeachers.filter(t => {
-            if (t.jabatan !== 'Guru Kelas') return false;
-            return t.guru_mengajar?.some(gm => gm.kelas?.nama_kelas?.includes(`Kelas ${i}`));
-        });
-
-        // --- TAMBAHKAN KODE SORTING INI ---
-        // Mengurutkan berdasarkan nama kelas (1A, 1B, 1C, dst)
+        let guruKelasIni = allTeachers.filter(t => t.jabatan === 'Guru Kelas' && t.guru_mengajar?.some(gm => gm.kelas?.nama_kelas?.includes(`Kelas ${i}`)));
         guruKelasIni.sort((a, b) => {
-            // Cari nama kelas pastinya untuk guru A dan B
             const kelasA = a.guru_mengajar?.find(gm => gm.kelas?.nama_kelas?.includes(`Kelas ${i}`))?.kelas?.nama_kelas || '';
             const kelasB = b.guru_mengajar?.find(gm => gm.kelas?.nama_kelas?.includes(`Kelas ${i}`))?.kelas?.nama_kelas || '';
-            
-            // Urutkan sesuai alfabet (A-Z)
             return kelasA.localeCompare(kelasB);
         });
-        // ----------------------------------
-
         html += renderSec(`Kelas ${i}`, guruKelasIni);
     }
     
-    // B. Guru Mapel & C. Staf
     html += renderSec('Guru Mata Pelajaran', allTeachers.filter(t => t.jabatan === 'Guru Mata Pelajaran'));
     html += renderSec('Tenaga Kependidikan', allTeachers.filter(t => t.jabatan === 'Tenaga Kependidikan'));
 
     content.innerHTML = html || '<div class="text-center text-muted py-5">Belum ada data pendidik.</div>';
-    modal.show();
+    new bootstrap.Modal(modalEl).show();
 }
 
-/* --- BERITA --- */
+// C. Data Berita
 async function fetchNews() {
     try {
         const { data, error } = await supabaseClient.from('berita').select('*').order('id', { ascending: false });
@@ -278,7 +229,7 @@ async function fetchNews() {
         if(allNewsData.length > 0) {
             container.innerHTML = allNewsData.slice(0, 3).map((n, idx) => `
                 <div class="col-md-4">
-                    <div class="card h-100 shadow-sm overflow-hidden" style="cursor: pointer; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" onclick="openNewsModal(${idx})">
+                    <div class="card h-100 shadow-sm overflow-hidden" style="cursor: pointer;" onclick="openNewsModal(${idx})">
                         <div class="bg-light d-flex align-items-center justify-content-center" style="height:200px;">
                             <img src="${n.img || 'https://placehold.co/400'}" class="w-100 h-100 p-2" style="object-fit:contain;" alt="${n.title}">
                         </div>
@@ -311,23 +262,18 @@ window.openNewsModal = function(index) {
     const data = allNewsData[index];
     document.getElementById('modal-news-img').src = data.img || 'https://placehold.co/800x400?text=No+Image';
     document.getElementById('modal-news-title').innerText = data.title;
-    // Sembunyikan date jika tidak ada field-nya
     const dateEl = document.getElementById('modal-news-date');
     if(dateEl) dateEl.style.display = 'none'; 
     document.getElementById('modal-news-content').innerHTML = data.content;
     new bootstrap.Modal(document.getElementById('newsModal')).show();
 }
 
-/* --- PRESTASI & VISITOR --- */
-
-let allPrestasiData = []; // Variabel untuk menyimpan data prestasi
-
+// D. Data Prestasi
 async function fetchPrestasi() {
     try {
         const { data, error } = await supabaseClient.from('prestasi').select('*').order('id', { ascending: false });
         if(error) throw error;
-        
-        allPrestasiData = data || []; // Simpan ke variabel global
+        allPrestasiData = data || []; 
         
         const container = document.getElementById('prestasi-featured');
         const listContainer = document.getElementById('prestasi-archive-list');
@@ -338,14 +284,11 @@ async function fetchPrestasi() {
             return;
         }
 
-        // Tampilkan 3 Prestasi Utama
         container.innerHTML = allPrestasiData.slice(0, 3).map((p, idx) => {
-            // Hilangkan tag HTML untuk teks preview di kartu
             const plainTextDesc = p.desc ? p.desc.replace(/<[^>]+>/g, '') : '';
-            
             return `
             <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden" style="cursor: pointer; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" onclick="openPrestasiModal(${idx})">
+                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden" style="cursor: pointer;" onclick="openPrestasiModal(${idx})">
                     <div class="bg-light position-relative" style="height:220px;">
                         <img src="${p.img || 'https://placehold.co/400?text=Prestasi'}" class="w-100 h-100 p-3" style="object-fit:contain;" alt="${p.title}">
                         <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-3 shadow-sm">
@@ -361,11 +304,8 @@ async function fetchPrestasi() {
             `;
         }).join('');
 
-        // Tampilkan Sisanya di Daftar Arsip
         if (allPrestasiData.length > 3 && listContainer) {
             listContainer.innerHTML = allPrestasiData.slice(3).map((p, idx) => {
-                const plainTextDesc = p.desc ? p.desc.replace(/<[^>]+>/g, '') : '';
-                
                 return `
                 <div class="list-group-item list-group-item-action p-3 border-bottom d-flex align-items-center gap-3" style="cursor: pointer;" onclick="openPrestasiModal(${idx + 3})">
                     <div class="bg-light rounded d-flex align-items-center justify-content-center flex-shrink-0" style="width: 60px; height: 60px;">
@@ -385,47 +325,82 @@ async function fetchPrestasi() {
     } catch(e) { console.error("Gagal load prestasi:", e); }
 }
 
-// Fungsi untuk membuka Modal Prestasi
 window.openPrestasiModal = function(index) {
     const data = allPrestasiData[index];
-    
-    // Set Foto & Kategori
     document.getElementById('modal-prestasi-img').src = data.img || 'https://placehold.co/800x400?text=Prestasi';
     document.getElementById('modal-prestasi-category').innerText = data.category || 'Prestasi';
-    
-    // Set Judul
     document.getElementById('modal-prestasi-title').innerText = data.title;
-    
-    // Set Deskripsi (dengan membiarkan format HTML dari admin utuh)
     document.getElementById('modal-prestasi-content').innerHTML = data.desc || '<p class="text-muted">Tidak ada detail.</p>';
-    
-    // Tampilkan Modal
     new bootstrap.Modal(document.getElementById('prestasiModal')).show();
 }
 
+// E. Buku Tamu & Statistik
 async function fetchMessages() {
     const container = document.getElementById('messages-display');
     if (!container) return;
-
+    
     try {
-        const { data, error } = await supabaseClient.from('buku_tamu').select('*').order('id', { ascending: false }).limit(3);
+        // Ambil data dari database: URUTKAN terbaru, BATASI 3, HANYA YANG TAMPIL = TRUE
+        const { data, error } = await supabaseClient
+            .from('buku_tamu')
+            .select('*')
+            .eq('tampil', true) // <--- Filter ini yang membuat saklar bekerja!
+            .order('created_at', { ascending: false })
+            .limit(3);
+            
         if(error) throw error;
         
         if (data.length === 0) {
-            container.innerHTML = '<small class="text-white-50">Belum ada ulasan.</small>';
+            container.innerHTML = '<small class="text-white-50">Belum ada ulasan yang ditampilkan.</small>';
             return;
         }
-
-        container.innerHTML = data.map(m => `
+        
+        container.innerHTML = data.map(m => {
+            // Format Tanggal
+            const date = m.created_at ? new Date(m.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+            
+            return `
             <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);">
-                <div class="d-flex justify-content-between mb-1">
-                    <small class="fw-bold">${m.name}</small>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="fw-bold text-white">${m.name}</small>
+                    <span class="badge bg-white text-dark bg-opacity-75 shadow-sm" style="font-size: 0.65rem;">
+                        <i class="far fa-calendar-alt me-1"></i> ${date}
+                    </span>
                 </div>
                 <p class="small fst-italic mb-0 opacity-75">"${m.message}"</p>
             </div>
-        `).join('');
+        `}).join('');
     } catch(e) { 
         container.innerHTML = '<small class="text-white-50">Gagal memuat ulasan.</small>';
+    }
+}
+
+function setupGuestbookForm() {
+    const guestbookForm = document.getElementById('guestbook-form');
+    if (guestbookForm) {
+        guestbookForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = 'Mengirim...';
+
+            const payload = {
+                name: document.getElementById('visitor-name').value,
+                message: document.getElementById('visitor-message').value,
+                tampil: false
+            };
+            try {
+                const { error } = await supabaseClient.from('buku_tamu').insert([payload]);
+                if(error) throw error;
+                alert("Pesan terkirim! Terima kasih.");
+                e.target.reset();
+                fetchMessages(); 
+            } catch(err) { 
+                alert("Gagal mengirim pesan."); 
+            } finally {
+                btn.disabled = false; btn.innerHTML = originalText;
+            }
+        });
     }
 }
 
@@ -433,27 +408,91 @@ async function updateVisitorCount() {
     try {
         const { data: getStat } = await supabaseClient.from('statistik').select('count').eq('id', 1).single();
         let currentCount = getStat ? getStat.count : 0;
-        
-        currentCount++;
-        await supabaseClient.from('statistik').update({ count: currentCount }).eq('id', 1);
+
+        const today = new Date().toDateString();
+        const lastVisit = localStorage.getItem('lastVisitDate');
+
+        if (lastVisit !== today) {
+            currentCount++;
+            
+            await supabaseClient.from('statistik').update({ count: currentCount }).eq('id', 1);
+            
+            localStorage.setItem('lastVisitDate', today);
+        }
 
         const vCount = document.getElementById('visitor-count');
         const sCount = document.getElementById('stat-visitor');
         if(vCount) vCount.innerText = currentCount.toLocaleString('id-ID');
         if(sCount) sCount.innerText = currentCount.toLocaleString('id-ID');
-    } catch(e) { console.error("Gagal update statistik:", e); }
+        
+    } catch(e) { 
+        console.error("Gagal update statistik:", e); 
+    }
 }
 
-/* --- PENGHILANG LAYAR LOADING --- */
-// Event 'load' memastikan seluruh gambar, font, dan css selesai di-download
-window.addEventListener('load', () => {
-    const preloader = document.getElementById('preloader');
+/* --- F. DATA GALERI FOTO --- */
+let allGaleriData = [];
+
+async function fetchGaleri() {
+    try {
+        const { data, error } = await supabaseClient.from('galeri').select('*').order('id', { ascending: false });
+        if(error) throw error;
+        allGaleriData = data || [];
+        
+        const container = document.getElementById('galeri-featured');
+        const listContainer = document.getElementById('galeri-archive-list');
+        if(!container) return;
+        
+        if(allGaleriData.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center text-muted py-5">Belum ada album galeri.</div>';
+            return;
+        }
+
+        // Fungsi pembuat Kartu Galeri
+        const createCard = (g, idx) => {
+            const fotos = JSON.parse(g.fotos || '[]');
+            const cover = fotos.length > 0 ? fotos[0] : 'https://placehold.co/400x300';
+            return `
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden" style="cursor: pointer; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" onclick="openLihatGaleri(${idx})">
+                    
+                    <div class="bg-light position-relative" style="height: 200px;">
+                        <img src="${cover}" class="w-100 h-100 p-3" style="object-fit:contain;">
+                        <span class="badge bg-danger text-white position-absolute top-0 end-0 m-3 shadow-sm">
+                            <i class="fas fa-camera me-1"></i> ${fotos.length}
+                        </span>
+                    </div>
+                    
+                    <div class="card-body text-center d-flex align-items-center justify-content-center">
+                        <h6 class="card-title fw-bold text-dark mb-0">${g.title}</h6>
+                    </div>
+                    
+                </div>
+            </div>`;
+        };
+
+        // 4 Galeri Utama
+        container.innerHTML = allGaleriData.slice(0, 4).map((g, idx) => createCard(g, idx)).join('');
+
+        // Sisanya masuk ke collapse
+        if (allGaleriData.length > 4 && listContainer) {
+            listContainer.innerHTML = allGaleriData.slice(4).map((g, idx) => createCard(g, idx + 4)).join('');
+        } else {
+            document.querySelectorAll('[data-bs-target="#collapseGaleri"]').forEach(btn => btn.style.display = 'none');
+        }
+    } catch(e) { console.error("Gagal load galeri:", e); }
+}
+
+window.openLihatGaleri = function(index) {
+    const data = allGaleriData[index];
+    const fotos = JSON.parse(data.fotos || '[]');
     
-    if (preloader) {
-        // Beri sedikit jeda (misal: 0.5 detik) agar animasi melayangnya sempat terlihat
-        setTimeout(() => {
-            preloader.classList.add('hidden'); // Memudarkan loading screen
-            document.body.classList.remove('no-scroll'); // Membuka kunci scroll
-        }, 500);
-    }
-});
+    document.getElementById('modal-lihat-gal-title').innerText = data.title;
+    
+    // Looping gambar ke dalam wadah Justified CSS
+    document.getElementById('modal-lihat-gal-grid').innerHTML = fotos.map(url => `
+        <img src="${url}" alt="Foto Galeri">
+    `).join('');
+    
+    new bootstrap.Modal(document.getElementById('galeriLihatModal')).show();
+}
