@@ -266,7 +266,15 @@ window.openNewsModal = function(index) {
     document.getElementById('modal-news-title').innerText = data.title;
     const dateEl = document.getElementById('modal-news-date');
     if(dateEl) dateEl.style.display = 'none'; 
-    document.getElementById('modal-news-content').innerHTML = data.content;
+    
+    // --- TRIK TOMBOL RAHASIA DIMULAI DI SINI ---
+    let isiBerita = data.content;
+    
+    // Jika ada teks [TOMBOL_PENDATAAN], ubah menjadi tombol HTML merah
+    isiBerita = isiBerita.replace(/\[TOMBOL_PENDATAAN\]/g, '<div class="text-center my-4"><a href="pendataan-kelas6.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary rounded-pill fw-bold text-white px-5 py-2 shadow" style="background-color: #DC2626; border-color: #DC2626; text-decoration: none;">Klik di Sini untuk Login</a></div>');
+    // -------------------------------------------
+
+    document.getElementById('modal-news-content').innerHTML = isiBerita;
     new bootstrap.Modal(document.getElementById('newsModal')).show();
 }
 
