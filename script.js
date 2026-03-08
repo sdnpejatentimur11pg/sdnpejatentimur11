@@ -45,6 +45,8 @@ async function fetchProfilSekolah() {
         if (data.nama_sekolah) {
             document.getElementById('nav-nama').innerText = data.nama_sekolah;
             document.getElementById('footer-nama').innerText = data.nama_sekolah;
+            const judulSambutan = document.getElementById('judul-sambutan');
+            if (judulSambutan) judulSambutan.innerText = `Sambutan Kepala ${data.nama_sekolah}`;
         }
         if (data.kota) document.getElementById('nav-kota').innerText = data.kota;
         
@@ -496,3 +498,4 @@ window.openLihatGaleri = function(index) {
     
     new bootstrap.Modal(document.getElementById('galeriLihatModal')).show();
 }
+

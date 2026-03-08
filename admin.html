@@ -100,27 +100,113 @@
                 </div>
 
                 <div id="view-pengguna" class="admin-view d-none">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2 class="fw-bold mb-0">Manajemen Pengguna (Admin)</h2>
-                        <button class="btn btn-primary shadow-sm" onclick="openPenggunaModal()">
-                            <i class="fas fa-plus me-2"></i> Tambah User Baru
-                        </button>
-                    </div>
-                    <div class="card border-0 shadow-sm p-4">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Nama Lengkap</th>
-                                        <th>Username</th>
-                                        <th>Hak Akses</th>
-                                        <th class="text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-pengguna-list">
-                                    <tr><td colspan="4" class="text-center text-muted py-4">Memuat data...</td></tr>
-                                </tbody>
-                            </table>
+                    <h2 class="fw-bold mb-4">Manajemen Pengguna (Sistem Akun)</h2>
+                    
+                    <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm gap-2" id="userTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold px-4" data-bs-toggle="tab" data-bs-target="#tab-admin" type="button"><i class="fas fa-user-shield me-2"></i>Admin</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold px-4 text-success" data-bs-toggle="tab" data-bs-target="#tab-guru" type="button"><i class="fas fa-chalkboard-teacher me-2"></i>Pendidik (Guru)</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold px-4 text-info" data-bs-toggle="tab" data-bs-target="#tab-murid" type="button"><i class="fas fa-user-graduate me-2"></i>Murid</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-admin">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold mb-0 text-secondary">Daftar Akses Admin Panel</h5>
+                                <button class="btn btn-primary shadow-sm" onclick="openPenggunaModal()">
+                                    <i class="fas fa-plus me-2"></i> Tambah Admin
+                                </button>
+                            </div>
+                            <div class="card border-0 shadow-sm p-4">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Nama Lengkap</th>
+                                            <th>Username</th>
+                                            <th>Hak Akses</th>
+                                            <th class="text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-pengguna-list">
+                                        <tr><td colspan="4" class="text-center text-muted">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-guru">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold mb-0 text-secondary">Daftar Akun Portal Pendidik</h5>
+                                <button class="btn btn-success shadow-sm" onclick="generateAkunGuru()">
+                                    <i class="fas fa-magic me-2"></i> Generate Akun Guru
+                                </button>
+                            </div>
+                            <div class="alert alert-success border-0 shadow-sm py-2 small"><i class="fas fa-info-circle me-2"></i>Tombol generate otomatis membuat username (berdasarkan NIP/Nama) & password <b>guru123</b>.</div>
+                            <div class="card border-0 shadow-sm p-4">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="5%">No</th>
+                                            <th width="35%">Nama Guru</th>
+                                            <th width="25%">Username</th>
+                                            <th width="20%">Password</th>
+                                            <th width="15%" class="text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="akun-guru-list">
+                                        <tr><td colspan="5" class="text-center text-muted">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-murid">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold mb-0 text-secondary">Daftar Akun Portal Murid</h5>
+                                <button class="btn btn-info text-white shadow-sm" onclick="generateAkunMurid()">
+                                    <i class="fas fa-magic me-2"></i> Generate Akun Murid
+                                </button>
+                            </div>
+                            <div class="alert alert-info border-0 shadow-sm py-2 small"><i class="fas fa-info-circle me-2"></i>Tombol generate menggunakan NISN sebagai username & password <b>murid123</b>.</div>
+                            
+                            <div class="row mb-3 g-2">
+                                <div class="col-md-4">
+                                    <select id="filter-kelas-akun-murid" class="form-select border-info shadow-sm" onchange="renderAkunMurid()">
+                                        <option value="all">Semua Kelas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="input-group shadow-sm">
+                                        <span class="input-group-text bg-white border-info"><i class="fas fa-search text-info"></i></span>
+                                        <input type="text" id="search-akun-murid" class="form-control border-info" placeholder="Cari nama atau username..." oninput="renderAkunMurid()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border-0 shadow-sm p-4">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="5%">No</th>
+                                                <th width="30%">Nama Murid</th>
+                                                <th width="15%">Kelas</th>
+                                                <th width="20%">Username</th>
+                                                <th width="15%">Password</th>
+                                                <th width="15%" class="text-center">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="akun-murid-list">
+                                            <tr><td colspan="6" class="text-center text-muted">Memuat data...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -149,6 +235,39 @@
                                         <small class="text-muted" style="font-size: 0.75rem;">*Gunakan kombinasi yang mudah diingat namun aman.</small>
                                     </div>
                                     <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill py-2"><i class="fas fa-save me-2"></i>Simpan Akun</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="formEditAkunModal" tabindex="-1" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow">
+                            <div class="modal-header border-bottom-0 pt-4 px-4">
+                                <h5 class="modal-title fw-bold" id="formEditAkunModalLabel">Edit Akun</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <form id="edit-akun-form">
+                                    <input type="hidden" id="edit-akun-id">
+                                    <input type="hidden" id="edit-akun-table">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small text-secondary">Nama Lengkap</label>
+                                        <input type="text" id="edit-akun-nama" class="form-control bg-light text-muted" readonly> 
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Username</label>
+                                        <input type="text" id="edit-akun-username" class="form-control" required>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold small">Password</label>
+                                        <input type="text" id="edit-akun-password" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill py-2">
+                                        <i class="fas fa-save me-2"></i>Simpan Perubahan
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -401,21 +520,34 @@
                 </div>
 
                 <div id="view-murid" class="admin-view d-none">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <h2 class="fw-bold mb-0">Kelola Data Murid</h2>
                         <div class="d-flex gap-2">
                             <button class="btn btn-outline-success shadow-sm" onclick="downloadTemplateMurid()">
                                 <i class="fas fa-download me-1"></i> Template
                             </button>
-                            
                             <input type="file" id="import-murid-file" class="d-none" accept=".xlsx, .xls" onchange="handleImportMurid(this)">
                             <button class="btn btn-success shadow-sm" onclick="document.getElementById('import-murid-file').click()">
                                 <i class="fas fa-file-excel me-1"></i> Import
                             </button>
-
                             <button class="btn btn-primary shadow-sm" onclick="openMuridModal()">
                                 <i class="fas fa-plus me-2"></i> Tambah Murid
                             </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4 g-3">
+                        <div class="col-md-4">
+                            <select id="filter-kelas-murid" class="form-select shadow-sm border-primary" onchange="renderAdminMurid()">
+                                <option value="all">Semua Kelas</option>
+                                </select>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white border-primary"><i class="fas fa-search text-primary"></i></span>
+                                <input type="text" id="search-nama-murid" class="form-control border-primary" placeholder="Ketik nama murid atau NISN di sini..." oninput="renderAdminMurid()">
+                            </div>
                         </div>
                     </div>
                     <div class="card border-0 shadow-sm p-4">
@@ -510,9 +642,10 @@
                             <table class="table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
+                                        <th width="15%" class="text-center">Foto</th>
                                         <th width="15%">Tanggal</th>
-                                        <th width="60%">Judul Berita</th>
-                                        <th width="25%" class="text-center">Aksi</th>
+                                        <th width="50%">Judul Berita</th>
+                                        <th width="20%" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-news-list">
@@ -546,7 +679,14 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Link Gambar (URL)</label>
-                                        <input type="url" id="news-img" class="form-control" placeholder="https://...">
+                                        <div class="d-flex gap-3 align-items-start">
+                                            <div class="flex-grow-1">
+                                                <input type="url" id="news-img" class="form-control" placeholder="https://..." oninput="previewImage('news-img', 'news-preview')">
+                                            </div>
+                                            <div class="border rounded bg-light d-flex align-items-center justify-content-center overflow-hidden shadow-sm" style="width: 100px; height: 70px; flex-shrink: 0;">
+                                                <img id="news-preview" src="https://placehold.co/100x70?text=Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="text-end mt-4 pt-3 border-top">
                                         <button type="button" class="btn btn-light px-4 me-2" data-bs-dismiss="modal">Batal</button>
@@ -664,9 +804,11 @@
                             <table class="table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
+                                        <th width="15%" class="text-center">Foto</th>
+                                        <th width="20%">Nama Siswa/Grup</th>
                                         <th width="20%">Kategori/Juara</th>
-                                        <th width="55%">Judul Prestasi</th>
-                                        <th width="25%" class="text-center">Aksi</th>
+                                        <th width="35%">Judul Prestasi</th>
+                                        <th width="10%" class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-prestasi-list">
@@ -689,6 +831,11 @@
                                     <input type="hidden" id="prestasi-id">
                                     
                                     <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-bold">Nama Siswa / Grup</label>
+                                            <input type="text" id="prestasi-nama" class="form-control" placeholder="Contoh: Budi Santoso / Tim Pramuka" required>
+                                        </div>
+                                        
                                         <div class="col-md-8">
                                             <label class="form-label fw-bold">Judul Prestasi</label>
                                             <input type="text" id="prestasi-title" class="form-control" placeholder="Contoh: Juara 1 Lomba Cerdas Cermat" required>
@@ -705,7 +852,14 @@
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label fw-bold">Link Foto / Dokumentasi (URL)</label>
-                                            <input type="url" id="prestasi-img" class="form-control" placeholder="https://...">
+                                            <div class="d-flex gap-3 align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <input type="url" id="prestasi-img" class="form-control" placeholder="https://..." oninput="previewImage('prestasi-img', 'prestasi-preview')">
+                                                </div>
+                                                <div class="border rounded bg-light d-flex align-items-center justify-content-center overflow-hidden shadow-sm" style="width: 100px; height: 70px; flex-shrink: 0;">
+                                                    <img id="prestasi-preview" src="https://placehold.co/100x70?text=Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     

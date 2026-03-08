@@ -131,6 +131,11 @@ function switchTab(tabId) {
     if (tabId === 'galeri') fetchAdminGaleri();
     if (tabId === 'bukutamu') fetchAdminBukuTamu();
     if (tabId === 'murid') { fetchAdminMurid(); fetchDropdownKelas(); }
+    if (tabId === 'pengguna') { 
+        fetchAdminPengguna(); 
+        fetchAkunGuru(); 
+        fetchAkunMurid(); 
+    }
 }
 
 function logout() {
@@ -557,6 +562,17 @@ async function handleImportExcel(input) {
     reader.readAsArrayBuffer(input.files[0]);
 }
 
+// Fungsi global untuk preview gambar yang KEBAL ERROR
+window.previewImage = function(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const img = document.getElementById(previewId);
+    
+    // Hanya jalankan jika elemen input dan gambarnya benar-benar ada di HTML
+    if (input && img) {
+        img.src = input.value ? input.value : 'https://placehold.co/100x70?text=Preview';
+    }
+};
+
 // --- 7. KELOLA BERITA ---
 async function fetchAdminNews() {
     try {
@@ -566,12 +582,15 @@ async function fetchAdminNews() {
         
         const tbody = document.getElementById('admin-news-list');
         if(adminNewsData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Belum ada berita.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">Belum ada berita.</td></tr>';
             return;
         }
         
         tbody.innerHTML = adminNewsData.map((n, index) => `
             <tr>
+                <td class="text-center">
+                    <img src="${n.img || 'https://placehold.co/80x60?text=No+Foto'}" class="rounded shadow-sm" style="width: 80px; height: 60px; object-fit: cover;">
+                </td>
                 <td class="text-muted small">${n.date || '-'}</td>
                 <td class="fw-bold text-dark">${n.title}</td>
                 <td class="text-center">
@@ -587,31 +606,53 @@ window.openNewsModal = function(index = null) {
     const modal = new bootstrap.Modal(document.getElementById('formNewsModal'));
     const form = document.getElementById('add-news-form');
     
-    form.reset();
-    quillBerita.setContents([]);
-    document.getElementById('news-id').value = '';
+    if(form) form.reset();
+    if(typeof quillBerita !== 'undefined') quillBerita.setContents([]);
+    
+    const idInput = document.getElementById('news-id');
+    if(idInput) idInput.value = '';
     
     if (index !== null) {
         const data = adminNewsData[index];
-        document.getElementById('formNewsModalLabel').innerText = 'Edit Berita';
-        document.getElementById('news-id').value = data.id;
-        document.getElementById('news-title').value = data.title;
-        document.getElementById('news-img').value = data.img || '';
-        if(data.content) quillBerita.clipboard.dangerouslyPasteHTML(data.content);
+        const label = document.getElementById('formNewsModalLabel');
+        if(label) label.innerText = 'Edit Berita';
+        
+        if(idInput) idInput.value = data.id;
+        
+        const titleInput = document.getElementById('news-title');
+        if(titleInput) titleInput.value = data.title;
+        
+        const imgInput = document.getElementById('news-img');
+        if(imgInput) imgInput.value = data.img || '';
+        
+        if(data.content && typeof quillBerita !== 'undefined') {
+            quillBerita.clipboard.dangerouslyPasteHTML(data.content);
+        }
     } else {
-        document.getElementById('formNewsModalLabel').innerText = 'Tambah Berita Baru';
+        const label = document.getElementById('formNewsModalLabel');
+        if(label) label.innerText = 'Tambah Berita Baru';
     }
+    
+    previewImage('news-img', 'news-preview'); 
     modal.show();
 };
 
 async function postNews(e) {
     e.preventDefault();
-    const newsId = document.getElementById('news-id').value;
+    const idInput = document.getElementById('news-id');
+    const newsId = idInput ? idInput.value : '';
+    
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerHTML;
     
     btn.disabled = true; btn.innerHTML = 'Menyimpan...';
-    const payload = { title: document.getElementById('news-title').value, content: quillBerita.root.innerHTML, img: document.getElementById('news-img').value };
+    
+    // Ambil nilai dengan aman
+    const titleVal = document.getElementById('news-title') ? document.getElementById('news-title').value : '';
+    const imgVal = document.getElementById('news-img') ? document.getElementById('news-img').value : '';
+    const contentVal = typeof quillBerita !== 'undefined' ? quillBerita.root.innerHTML : '';
+
+    const payload = { title: titleVal, content: contentVal, img: imgVal };
 
     try {
         if (newsId) {
@@ -642,14 +683,18 @@ async function fetchAdminPrestasi() {
         
         const tbody = document.getElementById('admin-prestasi-list');
         if(adminPrestasiData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">Belum ada data prestasi.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Belum ada data prestasi.</td></tr>';
             return;
         }
         
         tbody.innerHTML = adminPrestasiData.map((p, index) => `
             <tr>
+                <td class="text-center">
+                    <img src="${p.img || 'https://placehold.co/80x60?text=No+Foto'}" class="rounded shadow-sm" style="width: 80px; height: 60px; object-fit: cover;">
+                </td>
+                <td class="fw-bold text-dark">${p.nama_siswa || '-'}</td>
                 <td><span class="badge bg-warning text-dark">${p.category || 'Juara'}</span></td>
-                <td class="fw-bold text-dark">${p.title}</td>
+                <td>${p.title}</td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="openPrestasiModal(${index})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deletePrestasi(${p.id})"><i class="fas fa-trash"></i></button>
@@ -663,36 +708,74 @@ window.openPrestasiModal = function(index = null) {
     const modal = new bootstrap.Modal(document.getElementById('formPrestasiModal'));
     const form = document.getElementById('add-prestasi-form');
     
-    form.reset();
-    document.getElementById('prestasi-id').value = '';
+    if(form) form.reset();
+    
+    const idInput = document.getElementById('prestasi-id');
+    if(idInput) idInput.value = '';
     
     if (index !== null) {
         const data = adminPrestasiData[index];
-        document.getElementById('formPrestasiModalLabel').innerText = 'Edit Prestasi';
-        document.getElementById('prestasi-id').value = data.id;
-        document.getElementById('prestasi-title').value = data.title;
-        document.getElementById('prestasi-category').value = data.category || '';
-        if (data.desc) quillPrestasi.clipboard.dangerouslyPasteHTML(data.desc);
-        else quillPrestasi.setContents([]);
-        document.getElementById('prestasi-img').value = data.img || '';
+        const label = document.getElementById('formPrestasiModalLabel');
+        if(label) label.innerText = 'Edit Prestasi';
+        
+        if(idInput) idInput.value = data.id;
+        
+        const titleInput = document.getElementById('prestasi-title');
+        if(titleInput) titleInput.value = data.title;
+        
+        const catInput = document.getElementById('prestasi-category');
+        if(catInput) catInput.value = data.category || '';
+        
+        // Pengisian aman untuk Nama Siswa (Jika kolom di HTML tidak ada, JS tidak akan crash)
+        const namaInput = document.getElementById('prestasi-nama');
+        if(namaInput) namaInput.value = data.nama_siswa || ''; 
+        
+        if (data.desc && typeof quillPrestasi !== 'undefined') {
+            quillPrestasi.clipboard.dangerouslyPasteHTML(data.desc);
+        } else if (typeof quillPrestasi !== 'undefined') {
+            quillPrestasi.setContents([]);
+        }
+        
+        const imgInput = document.getElementById('prestasi-img');
+        if(imgInput) imgInput.value = data.img || '';
     } else {
-        document.getElementById('formPrestasiModalLabel').innerText = 'Tambah Prestasi Baru';
+        const label = document.getElementById('formPrestasiModalLabel');
+        if(label) label.innerText = 'Tambah Prestasi Baru';
     }
+    
+    previewImage('prestasi-img', 'prestasi-preview'); 
     modal.show();
 };
 
 async function postPrestasi(e) {
     e.preventDefault();
-    const id = document.getElementById('prestasi-id').value;
+    const idInput = document.getElementById('prestasi-id');
+    const id = idInput ? idInput.value : '';
+    
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerHTML;
     
     btn.disabled = true; btn.innerHTML = 'Menyimpan...';
-    const payload = { title: document.getElementById('prestasi-title').value, category: document.getElementById('prestasi-category').value, desc: quillPrestasi.root.innerHTML, img: document.getElementById('prestasi-img').value };
+    
+    // Ambil nilai dengan aman
+    const titleVal = document.getElementById('prestasi-title') ? document.getElementById('prestasi-title').value : '';
+    const catVal = document.getElementById('prestasi-category') ? document.getElementById('prestasi-category').value : '';
+    const namaVal = document.getElementById('prestasi-nama') ? document.getElementById('prestasi-nama').value : '';
+    const imgVal = document.getElementById('prestasi-img') ? document.getElementById('prestasi-img').value : '';
+    const descVal = typeof quillPrestasi !== 'undefined' ? quillPrestasi.root.innerHTML : '';
+
+    const payload = { 
+        title: titleVal, 
+        category: catVal, 
+        nama_siswa: namaVal, 
+        desc: descVal, 
+        img: imgVal 
+    };
 
     try {
         if (id) await supabaseClient.from('prestasi').update(payload).eq('id', id);
         else await supabaseClient.from('prestasi').insert([payload]);
+        
         bootstrap.Modal.getInstance(document.getElementById('formPrestasiModal'))?.hide();
         fetchAdminPrestasi();
     } catch(error) { alert('Gagal menyimpan data prestasi.'); } 
@@ -933,6 +1016,242 @@ window.deletePengguna = async function(id) {
     } catch(e) { alert('Gagal menghapus akun.'); }
 };
 
+/* === SISTEM GENERATE AKUN GURU & MURID === */
+let adminAkunMuridData = [];
+let adminAkunGuruData = []; // Tambahkan variabel penyimpan data guru
+
+// 1. FETCH & GENERATE GURU
+async function fetchAkunGuru() {
+    try {
+        const { data } = await supabaseClient.from('guru').select('id, nama, nip, username, password').order('nama', { ascending: true });
+        const tbody = document.getElementById('akun-guru-list');
+        
+        if(!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada data guru. Tambahkan di menu Data Guru.</td></tr>';
+            return;
+        }
+
+        adminAkunGuruData = data; // Simpan ke array global untuk diedit nanti
+
+        tbody.innerHTML = data.map((g, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="fw-bold text-dark">${g.nama}</td>
+                <td>${g.username ? `<span class="text-primary fw-bold">${g.username}</span>` : '<span class="badge bg-secondary">Belum Digenerate</span>'}</td>
+                <td>${g.password || '-'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary shadow-sm me-1" onclick="openEditAkunModal('guru', ${index})" title="Edit Akun"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger shadow-sm" onclick="hapusAkun('guru', '${g.id}')" title="Hapus Akses"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) { console.error(e); }
+}
+
+window.generateAkunGuru = async function() {
+    if(!confirm("Mulai otomatisasi pembuatan akun untuk semua Guru yang belum memiliki username?")) return;
+    
+    try {
+        const { data: gurus } = await supabaseClient.from('guru').select('*');
+        let updates = [];
+        
+        // Ambil daftar username yang sudah terpakai agar tidak ada duplikat
+        let existingUsernames = gurus.map(g => g.username).filter(u => u);
+
+        for (let g of gurus) {
+            if (!g.username) {
+                let uname = '';
+                if (g.nip && g.nip.trim() !== '' && g.nip.trim() !== '-') {
+                    uname = g.nip.replace(/[^0-9]/g, '');
+                } else {
+                    let namaTanpaGelar = g.nama.split(',')[0].trim();
+                    uname = namaTanpaGelar.replace(/[^a-zA-Z]/g, '').toLowerCase();
+                    
+                    // CEK DUPLIKAT (Tanpa menggunakan UUID)
+                    let baseUname = uname;
+                    let counter = 1;
+                    while(existingUsernames.includes(uname) || updates.find(u => u.username === uname)) {
+                        uname = baseUname + counter;
+                        counter++;
+                    }
+                }
+
+                updates.push({ id: g.id, username: uname, password: 'guru123' });
+            }
+        }
+
+        if (updates.length === 0) {
+            alert("Semua guru sudah memiliki akun!"); return;
+        }
+
+        for (let u of updates) {
+            await supabaseClient.from('guru').update({ username: u.username, password: u.password }).eq('id', u.id);
+        }
+
+        alert(`Sukses! ${updates.length} akun guru berhasil digenerate.`);
+        fetchAkunGuru();
+    } catch(e) { alert("Terjadi kesalahan saat generate akun guru."); }
+};
+
+// 2. FETCH, FILTER, & GENERATE MURID
+async function fetchAkunMurid() {
+    try {
+        // Tarik data murid beserta nama kelasnya
+        const { data, error } = await supabaseClient
+            .from('murid')
+            .select('id, nama_murid, nisn, username, password, kelas_id, kelas(nama_kelas)')
+            .order('kelas_id', { ascending: true })
+            .order('nama_murid', { ascending: true });
+            
+        if (error) throw error;
+        adminAkunMuridData = data || [];
+        
+        isiFilterKelasAkunMurid(); // Siapkan dropdown
+        renderAkunMurid(); // Tampilkan data
+    } catch(e) { console.error(e); }
+}
+
+// Fungsi mengisi dropdown kelas untuk tab akun murid
+async function isiFilterKelasAkunMurid() {
+    const selectFilter = document.getElementById('filter-kelas-akun-murid');
+    if (!selectFilter) return;
+    
+    const { data } = await supabaseClient.from('kelas').select('*').order('nama_kelas');
+    const currentVal = selectFilter.value;
+    
+    selectFilter.innerHTML = '<option value="all">Semua Kelas</option>' + 
+        (data || []).map(k => `<option value="${k.id}">${k.nama_kelas}</option>`).join('');
+        
+    if (currentVal) selectFilter.value = currentVal;
+}
+
+// Fungsi penampil (Render) yang merespon Filter & Search
+window.renderAkunMurid = function() {
+    const tbody = document.getElementById('akun-murid-list');
+    const filterValue = document.getElementById('filter-kelas-akun-murid')?.value || 'all';
+    const searchKeyword = document.getElementById('search-akun-murid')?.value.toLowerCase() || '';
+    
+    let filteredData = adminAkunMuridData.filter(m => {
+        const matchKelas = (filterValue === 'all') || (m.kelas_id === filterValue);
+        const nama = (m.nama_murid || '').toLowerCase();
+        const uname = (m.username || '').toLowerCase();
+        const matchSearch = nama.includes(searchKeyword) || uname.includes(searchKeyword);
+        return matchKelas && matchSearch;
+    });
+    
+    if(filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Pencarian tidak ditemukan.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filteredData.map((m, index) => {
+        const namaKelas = m.kelas ? m.kelas.nama_kelas : '-';
+        // Cari index asli untuk diedit, persis seperti trik di tabel murid sebelumnya
+        const originalIndex = adminAkunMuridData.findIndex(orig => orig.id === m.id);
+        
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="fw-bold text-dark">${m.nama_murid}</td>
+                <td><span class="badge bg-info text-dark">${namaKelas}</span></td>
+                <td>${m.username ? `<span class="text-info fw-bold">${m.username}</span>` : '<span class="badge bg-secondary">Belum Digenerate</span>'}</td>
+                <td>${m.password || '-'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary shadow-sm me-1" onclick="openEditAkunModal('murid', ${originalIndex})" title="Edit Akun"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger shadow-sm" onclick="hapusAkun('murid', '${m.id}')" title="Hapus Akses"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+window.generateAkunMurid = async function() {
+    if(!confirm("Mulai otomatisasi pembuatan akun untuk semua Murid menggunakan NISN?")) return;
+    try {
+        const { data: murids } = await supabaseClient.from('murid').select('*');
+        let updates = [];
+
+        for (let m of murids) {
+            if (!m.username && m.nisn) {
+                let nisnBersih = m.nisn.replace(/'/g, '').trim(); 
+                updates.push({ id: m.id, username: nisnBersih, password: 'murid123' });
+            }
+        }
+
+        if (updates.length === 0) {
+            alert("Semua murid sudah memiliki akun, atau ada murid yang belum memiliki NISN."); return;
+        }
+
+        for (let u of updates) {
+            await supabaseClient.from('murid').update({ username: u.username, password: u.password }).eq('id', u.id);
+        }
+
+        alert(`Sukses! ${updates.length} akun murid berhasil digenerate.`);
+        fetchAkunMurid(); // Refresh
+    } catch(e) { alert("Terjadi kesalahan saat generate akun murid."); }
+};
+
+// 3. FUNGSI AKSI (EDIT MODAL & HAPUS AKSES)
+
+// A. Fungsi Membuka Modal Edit Akun
+window.openEditAkunModal = function(table, index) {
+    const modal = new bootstrap.Modal(document.getElementById('formEditAkunModal'));
+    const form = document.getElementById('edit-akun-form');
+    form.reset();
+    
+    let data;
+    if (table === 'guru') {
+        data = adminAkunGuruData[index];
+        document.getElementById('formEditAkunModalLabel').innerText = 'Edit Akun Guru';
+        document.getElementById('edit-akun-nama').value = data.nama;
+    } else {
+        data = adminAkunMuridData[index];
+        document.getElementById('formEditAkunModalLabel').innerText = 'Edit Akun Murid';
+        document.getElementById('edit-akun-nama').value = data.nama_murid;
+    }
+
+    document.getElementById('edit-akun-id').value = data.id;
+    document.getElementById('edit-akun-table').value = table;
+    document.getElementById('edit-akun-username').value = data.username || '';
+    document.getElementById('edit-akun-password').value = data.password || '';
+
+    modal.show();
+};
+
+// B. Fungsi Menyimpan Perubahan dari Modal
+document.getElementById('edit-akun-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit-akun-id').value;
+    const table = document.getElementById('edit-akun-table').value;
+    const uname = document.getElementById('edit-akun-username').value.trim();
+    const pass = document.getElementById('edit-akun-password').value.trim();
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = 'Menyimpan...';
+
+    try {
+        const { error } = await supabaseClient.from(table).update({ username: uname, password: pass }).eq('id', id);
+        if (error) throw error;
+
+        bootstrap.Modal.getInstance(document.getElementById('formEditAkunModal'))?.hide();
+        table === 'guru' ? fetchAkunGuru() : fetchAkunMurid();
+    } catch (error) {
+        alert('Gagal menyimpan perubahan. Pastikan username tidak sama dengan pengguna lain.');
+    } finally {
+        btn.disabled = false; btn.innerHTML = originalText;
+    }
+});
+
+// C. Fungsi Hapus Akses (Kosongkan Username & Password)
+window.hapusAkun = async function(table, id) {
+    if(!confirm("Hapus akses akun ini? (Username dan Password akan dikosongkan, tapi data identitas orangnya tetap aman).")) return;
+    try {
+        await supabaseClient.from(table).update({ username: null, password: null }).eq('id', id);
+        table === 'guru' ? fetchAkunGuru() : fetchAkunMurid();
+    } catch (e) { alert('Gagal menghapus akun.'); }
+};
+
 // Fungsi mengubah status tampil/sembunyi di database
 window.toggleBukuTamu = async function(id, isTampil) {
     try {
@@ -956,63 +1275,101 @@ window.deleteBukuTamu = async function(id) {
 /* --- 12. KELOLA DATA MURID --- */
 let adminMuridData = [];
 
-// Fungsi khusus untuk mengisi dropdown pilihan kelas di Form Murid
+// Fungsi untuk mengisi dropdown pilihan kelas di Form dan Filter
 async function fetchDropdownKelas() {
     const { data } = await supabaseClient.from('kelas').select('*').order('nama_kelas');
-    const select = document.getElementById('murid-kelas');
-    if(select) {
-        select.innerHTML = '<option value="">Pilih Kelas...</option>' + 
+    
+    // 1. Isi Dropdown di Form Modal
+    const selectForm = document.getElementById('murid-kelas');
+    if(selectForm) {
+        selectForm.innerHTML = '<option value="">Pilih Kelas...</option>' + 
             (data || []).map(k => `<option value="${k.id}">${k.nama_kelas}</option>`).join('');
+    }
+
+    // 2. Isi Dropdown di Filter Tabel
+    const selectFilter = document.getElementById('filter-kelas-murid');
+    if(selectFilter) {
+        // Simpan nilai pilihan sebelumnya (jika ada) agar tidak kereset saat data di-refresh
+        const currentVal = selectFilter.value;
+        selectFilter.innerHTML = '<option value="all">Semua Kelas</option>' + 
+            (data || []).map(k => `<option value="${k.id}">${k.nama_kelas}</option>`).join('');
+        selectFilter.value = currentVal || 'all';
     }
 }
 
+// Menarik data murni dari database 
 async function fetchAdminMurid() {
     try {
-        // Tarik data murid sekaligus menarik nama kelas dari tabel 'kelas' yang berelasi
         const { data, error } = await supabaseClient
             .from('murid')
             .select(`*, kelas (nama_kelas)`)
-            .order('kelas_id', { ascending: true }) // Urutkan per kelas
-            .order('nama_murid', { ascending: true }); // Lalu urutkan per nama (A-Z)
+            .order('kelas_id', { ascending: true }) 
+            .order('nama_murid', { ascending: true }); 
             
         if(error) throw error;
         adminMuridData = data || [];
         
-        const tbody = document.getElementById('admin-murid-list');
-        if(adminMuridData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Belum ada data murid.</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = adminMuridData.map((m, index) => {
-            const namaKelas = m.kelas ? m.kelas.nama_kelas : '-';
-            
-            // Format Tanggal (Contoh: Jakarta, 17 Agu 2010)
-            let ttl = '-';
-            if (m.tempat_lahir || m.tanggal_lahir) {
-                const tgl = m.tanggal_lahir ? new Date(m.tanggal_lahir).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '';
-                ttl = `${m.tempat_lahir || ''}${m.tempat_lahir && tgl ? ', ' : ''}${tgl}`;
-            }
-            
-            return `
-                <tr>
-                    <td>
-                        <span class="fw-bold text-dark">${m.nisn || '-'}</span><br>
-                        <small class="text-muted">NIS: ${m.nis || '-'}</small>
-                    </td>
-                    <td class="fw-bold text-dark">${m.nama_murid}</td>
-                    <td class="text-center">${m.jenis_kelamin || '-'}</td>
-                    <td><span class="badge bg-info text-dark">${namaKelas}</span></td>
-                    <td><small>${ttl}</small></td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openMuridModal(${index})"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMurid(${m.id})"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        // Setelah data ditarik, panggil mesin penampil ke layar
+        renderAdminMurid();
     } catch(e) { console.error(e); }
 }
+
+// Menampilkan data ke layar (merespon Filter & Pencarian)
+window.renderAdminMurid = function() {
+    const tbody = document.getElementById('admin-murid-list');
+    
+    // Ambil nilai dari filter dan kolom pencarian
+    const filterValue = document.getElementById('filter-kelas-murid')?.value || 'all';
+    const searchKeyword = document.getElementById('search-nama-murid')?.value.toLowerCase() || ''; // Ubah ke huruf kecil semua
+    
+    // Proses Penyaringan Ganda (Kelas + Nama/NISN)
+    let filteredData = adminMuridData.filter(m => {
+        // 1. Lolos uji kelas? (Jika 'all', berarti lolos semua)
+        const matchKelas = (filterValue === 'all') || (m.kelas_id === filterValue);
+        
+        // 2. Lolos uji kata kunci? (Cari di Nama atau NISN)
+        const nama = (m.nama_murid || '').toLowerCase();
+        const nisn = (m.nisn || '').toLowerCase();
+        const matchSearch = nama.includes(searchKeyword) || nisn.includes(searchKeyword);
+        
+        // Murid hanya ditampilkan jika lolos kedua ujian di atas
+        return matchKelas && matchSearch;
+    });
+    
+    if(filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Pencarian tidak ditemukan. Coba kata kunci atau kelas lain.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filteredData.map((m) => {
+        const namaKelas = m.kelas ? m.kelas.nama_kelas : '-';
+        let ttl = '-';
+        if (m.tempat_lahir || m.tanggal_lahir) {
+            const tgl = m.tanggal_lahir ? new Date(m.tanggal_lahir).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '';
+            ttl = `${m.tempat_lahir || ''}${m.tempat_lahir && tgl ? ', ' : ''}${tgl}`;
+        }
+        
+        // MENCARI INDEX ASLI UNTUK TOMBOL EDIT:
+        const originalIndex = adminMuridData.findIndex(orig => orig.id === m.id);
+        
+        return `
+            <tr>
+                <td>
+                    <span class="fw-bold text-dark">${m.nisn || '-'}</span><br>
+                    <small class="text-muted">NIS: ${m.nis || '-'}</small>
+                </td>
+                <td class="fw-bold text-dark">${m.nama_murid}</td>
+                <td class="text-center">${m.jenis_kelamin || '-'}</td>
+                <td><span class="badge bg-info text-dark">${namaKelas}</span></td>
+                <td><small>${ttl}</small></td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="openMuridModal(${originalIndex})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMurid(${m.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
 
 window.openMuridModal = function(index = null) {
     const modal = new bootstrap.Modal(document.getElementById('formMuridModal'));
