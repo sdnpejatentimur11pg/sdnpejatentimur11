@@ -237,7 +237,7 @@ async function fetchNews() {
                         </div>
                         <div class="card-body">
                             <h5 class="card-title fw-bold text-dark" style="font-size: 1.1rem;">${n.title}</h5>
-                            <p class="card-text small text-muted" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${n.content.replace(/<[^>]+>/g, '')}</p>
+                            <p class="card-text small text-muted" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${n.content.replace(/<[^>]+>/g, '').replace(/\[TOMBOL_PENDATAAN\]/g, '')}</p>
                         </div>
                         <div class="card-footer bg-white border-0 text-primary fw-bold small py-3">
                             Baca Selengkapnya <i class="fas fa-arrow-right ms-1"></i>
