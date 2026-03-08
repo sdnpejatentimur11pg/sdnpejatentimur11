@@ -234,12 +234,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // 1. MASUKKAN URL WEB APP KAMU DI SINI
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6hDWyFds_p0H3_eVhGsLrfHdbGDNhl6rKZxJEiAl4UuMZBOWH93QvPY9Hs988CGlK/exec';
         
         let currentStudent = null;
         let semesterHeaders = [];
 
-        // --- FUNGSI BARU: Pemanggil Modal Notifikasi ---
+        // FUNGSI NOTIFIKASI
         function showNotification(title, message, type = 'info') {
             const titleEl = document.getElementById('notif-title');
             const msgEl = document.getElementById('notif-message');
@@ -257,11 +258,10 @@
             } else {
                 iconEl.innerHTML = '<i class="fas fa-info-circle fa-3x text-primary"></i>';
             }
-
             new bootstrap.Modal(document.getElementById('modalNotifikasi')).show();
         }
 
-        // Cek Session
+        // CEK SESSION SAAT RELOAD
         window.addEventListener('load', () => {
             const savedStudent = sessionStorage.getItem('loggedStudent');
             const savedHeaders = sessionStorage.getItem('semesterHeaders');
@@ -277,23 +277,23 @@
             }, 500);
         });
 
-        // --- FUNGSI BARU: Show/Hide Password ---
-        document.getElementById('toggle-pass').addEventListener('click', function() {
-            const passInput = document.getElementById('login-pass');
-            const icon = document.getElementById('toggle-icon');
-            
-            if (passInput.type === 'password') {
-                passInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                passInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        });
+        // TOGGLE SHOW/HIDE PASSWORD
+        const togglePass = document.getElementById('toggle-pass');
+        if (togglePass) {
+            togglePass.addEventListener('click', function() {
+                const passInput = document.getElementById('login-pass');
+                const icon = document.getElementById('toggle-icon');
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    icon.classList.replace('fa-eye', 'fa-eye-slash');
+                } else {
+                    passInput.type = 'password';
+                    icon.classList.replace('fa-eye-slash', 'fa-eye');
+                }
+            });
+        }
 
-        // Login
+        // FUNGSI LOGIN
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const inputNISN = document.getElementById('login-nisn').value.trim();
@@ -316,7 +316,6 @@
                     
                     sessionStorage.setItem('loggedStudent', JSON.stringify(currentStudent));
                     sessionStorage.setItem('semesterHeaders', JSON.stringify(semesterHeaders));
-                    
                     tampilkanDashboard(currentStudent);
                 } else {
                     showNotification('Login Gagal', result.message, 'error');
@@ -329,7 +328,7 @@
             }
         });
 
-        // Dashboard & Tabel
+        // TAMPILKAN DASHBOARD
         function tampilkanDashboard(dataSiswa) {
             document.getElementById('login-section').classList.add('d-none');
             document.getElementById('dashboard-section').classList.remove('d-none');
@@ -351,22 +350,51 @@
             const tbodyNilai = document.getElementById('tabel-nilai');
             let trHTML = '';
             const startIdx = [11, 15, 19, 23, 27];
-            
             for (let i = 0; i < 5; i++) {
                 let semName = semesterHeaders[i] || `Semester ${i+1}`;
                 trHTML += `<tr><td class="fw-bold bg-light">${semName}</td><td>${getVal(startIdx[i])}</td><td>${getVal(startIdx[i]+1)}</td><td>${getVal(startIdx[i]+2)}</td><td>${getVal(startIdx[i]+3)}</td></tr>`;
             }
             tbodyNilai.innerHTML = trHTML;
-            renderTabelPrestasi(getVal(31), getVal(32), getVal(33), getVal(34));
+            
+            // Panggil fungsi render prestasi
+            renderTabelPrestasi(dataSiswa);
         }
 
-        function renderTabelPrestasi(tingkat, lomba, juara, sertif) {
+        // FUNGSI RENDER TABEL PRESTASI
+        function renderTabelPrestasi(dataSiswa) {
             const tbodyPrestasi = document.getElementById('tabel-prestasi');
-            if (tingkat !== '-' && tingkat !== '') {
-                let sertifHTML = (sertif !== '-' && sertif !== '') 
-                    ? `<a href="${sertif}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fas fa-image me-1"></i> Lihat</a>` 
-                    : '-';
-                tbodyPrestasi.innerHTML = `<tr><td class="fw-bold">1</td><td><span class="badge bg-info text-dark">${tingkat}</span></td><td class="text-start">${lomba}</td><td class="fw-bold text-success">${juara}</td><td>${sertifHTML}</td></tr>`;
+            let htmlTabel = '';
+            let count = 0; 
+
+            for (let i = 0; i < 5; i++) {
+                let idx = 31 + (i * 4); 
+                let tingkat = dataSiswa[idx] ? dataSiswa[idx].toString().trim() : '';
+                
+                if (tingkat !== '-' && tingkat !== '') {
+                    count++;
+                    let lomba = dataSiswa[idx+1] ? dataSiswa[idx+1] : '-';
+                    let juara = dataSiswa[idx+2] ? dataSiswa[idx+2] : '-';
+                    let sertif = dataSiswa[idx+3] ? dataSiswa[idx+3] : '-';
+                    
+                    let sertifHTML = (sertif !== '-' && sertif !== '') 
+                        ? `<a href="${sertif}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3"><i class="fas fa-image me-1"></i> Lihat</a>` 
+                        : '-';
+                    
+                    // Menggunakan += agar baris sebelumnya tidak terhapus
+                    htmlTabel += `
+                        <tr>
+                            <td class="fw-bold">${count}</td>
+                            <td><span class="badge bg-info text-dark">${tingkat}</span></td>
+                            <td class="text-start">${lomba}</td>
+                            <td class="fw-bold text-success">${juara}</td>
+                            <td>${sertifHTML}</td>
+                        </tr>
+                    `;
+                }
+            }
+
+            if (count > 0) {
+                tbodyPrestasi.innerHTML = htmlTabel;
             } else {
                 tbodyPrestasi.innerHTML = `<tr><td colspan="5" class="text-muted py-4">Belum ada data prestasi yang tercatat.</td></tr>`;
             }
@@ -376,7 +404,7 @@
             new bootstrap.Modal(document.getElementById('modalTambahPrestasi')).show();
         }
 
-        // Submit Prestasi
+        // SUBMIT PRESTASI
         document.getElementById('form-prestasi').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
@@ -393,7 +421,7 @@
             const juaraVal = document.getElementById('input-juara').value;
 
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengunggah & Menyimpan...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyimpan...';
             btn.disabled = true;
 
             if (file) {
@@ -418,41 +446,46 @@
                 if (result.success) {
                     bootstrap.Modal.getInstance(document.getElementById('modalTambahPrestasi')).hide();
                     document.getElementById('form-prestasi').reset();
-                    
                     showNotification('Berhasil', result.message, 'success');
                     
                     const fileUrl = result.fileUrl || '-';
-                    renderTabelPrestasi(tingkat, lomba, juara, fileUrl);
                     
-                    currentStudent[31] = tingkat; currentStudent[32] = lomba; currentStudent[33] = juara; currentStudent[34] = fileUrl;
+                    // Update memori lokal pada slot yang benar
+                    for (let i = 0; i < 5; i++) {
+                        let idx = 31 + (i * 4);
+                        let cekTingkat = currentStudent[idx] ? currentStudent[idx].toString().trim() : '';
+                        if (cekTingkat === '' || cekTingkat === '-') {
+                            currentStudent[idx] = tingkat;
+                            currentStudent[idx+1] = lomba;
+                            currentStudent[idx+2] = juara;
+                            currentStudent[idx+3] = fileUrl;
+                            break; 
+                        }
+                    }
+                    
+                    renderTabelPrestasi(currentStudent);
                     sessionStorage.setItem('loggedStudent', JSON.stringify(currentStudent));
                 } else {
                     showNotification('Gagal Menyimpan', result.message || result.error, 'error');
                 }
             } catch (error) {
-                showNotification('Koneksi Terputus', 'Gagal menyimpan prestasi. Periksa koneksi Anda.', 'error');
+                showNotification('Koneksi Terputus', 'Gagal menyimpan prestasi.', 'error');
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
 
-        // --- ALUR LOGOUT BARU ---
-        // 1. Tombol logout memanggil modal
+        // FUNGSI LOGOUT
         function logoutSiswa() {
             new bootstrap.Modal(document.getElementById('modalKonfirmasi')).show();
         }
 
-        // 2. Fungsi proses logout sesungguhnya
         function prosesLogout() {
             sessionStorage.removeItem('loggedStudent');
             sessionStorage.removeItem('semesterHeaders');
             currentStudent = null;
-            
-            // Sembunyikan Modal Konfirmasi
             bootstrap.Modal.getInstance(document.getElementById('modalKonfirmasi')).hide();
-            
-            // Reset UI
             document.getElementById('login-form').reset();
             document.getElementById('dashboard-section').classList.add('d-none');
             document.getElementById('login-section').classList.remove('d-none');
