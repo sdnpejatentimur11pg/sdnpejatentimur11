@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portal Ekstrakurikuler</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-red: #c62828;
+      --light-red: #ffebee;
+      --hover-red: #b71c1c;
+    }
+    body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* Login Card */
+    .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .card-login { border: none; border-top: 5px solid var(--primary-red); border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; padding: 30px; background: white; }
+    .btn-red { background-color: var(--primary-red); color: white; transition: 0.3s; }
+    .btn-red:hover { background-color: var(--hover-red); color: white; }
+
+    /* Layout Dashboard */
+    #dashboard-view { display: none; }
+    .sidebar { background-color: var(--primary-red); min-height: 100vh; color: white; padding-top: 20px;}
+    .sidebar .nav-link { color: rgba(255,255,255,0.8); margin-bottom: 5px; border-radius: 5px; font-weight: 500;}
+    .sidebar .nav-link:hover, .sidebar .nav-link.active { background-color: rgba(255,255,255,0.2); color: white; }
+    
+    /* Content Area */
+    .content-area { padding: 30px; width: 100%; }
+    .card-custom { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); border: none; }
+    
+    /* Tabel */
+    .table thead th { background-color: var(--light-red); color: var(--primary-red); border-bottom: none; }
+    .table tbody tr { vertical-align: middle; }
+    .form-check-input:checked { background-color: var(--primary-red); border-color: var(--primary-red); }
+    
+    /* Loading overlay */
+    #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center; }
+  </style>
+</head>
+<body>
+
+  <div id="loading-overlay">
+    <div class="spinner-border text-danger" role="status" style="width: 3rem; height: 3rem;"></div>
+  </div>
+
+  <div id="login-view" class="login-container">
+    <div class="card-login">
+      <h4 class="text-center mb-4" style="color: var(--primary-red); font-weight: bold;">Portal Ekstrakurikuler</h4>
+      <div id="login-alert" class="alert alert-danger d-none"></div>
+      <div class="mb-3">
+        <label>Username</label>
+        <input type="text" id="username" class="form-control" placeholder="Masukkan username">
+      </div>
+      <div class="mb-4">
+        <label>Password</label>
+        <input type="password" id="password" class="form-control" placeholder="Masukkan password">
+      </div>
+      <button class="btn btn-red w-100" onclick="lakukanLogin()" id="btn-login">Masuk</button>
+    </div>
+  </div>
+
+  <div id="dashboard-view" class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row">
+      <nav class="sidebar col-md-3 col-lg-2 px-3">
+        <h5 class="text-center mb-4 border-bottom pb-3">Menu Utama</h5>
+        <ul class="nav flex-column" id="sidebar-menu">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" onclick="showPage('beranda')">Beranda</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPage('data-murid')">Data Murid</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPage('input-nilai')">Input Nilai</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPage('rekap-nilai')">Rekap Nilai</a>
+          </li>
+          <li class="nav-item mt-4">
+            <a class="nav-link text-warning" href="#" onclick="logout()">Keluar</a>
+          </li>
+        </ul>
+      </nav>
+
+      <main class="content-area">
+        <div id="page-beranda">
+          <div class="card-custom text-center py-5">
+            <h2 style="color: var(--primary-red);">Selamat Datang, <span id="nama-pembina"></span>!</h2>
+            <p class="text-muted">Pembina Ekstrakurikuler <strong id="nama-ekskul"></strong></p>
+          </div>
+        </div>
+
+        <div id="page-data-murid" class="d-none">
+          <div class="card-custom">
+            <h4 class="mb-4">Atur Keikutsertaan Murid</h4>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <select id="filter-kelas" class="form-select" onchange="renderTabelMurid()">
+                  <option value="Semua">Semua Kelas</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Nama</th>
+                    <th>Kelas</th>
+                    <th class="text-center">Keikutsertaan</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-murid"></tbody>
+              </table>
+            </div>
+            <div class="text-end mt-3">
+              <button class="btn btn-success px-4" onclick="simpanDataMurid()">Simpan Keikutsertaan</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="page-input-nilai" class="d-none">
+          <div class="card-custom">
+            <h4 class="mb-4">Input Nilai Ekstrakurikuler</h4>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Nama</th>
+                    <th>Kelas</th>
+                    <th>Nilai</th>
+                    <th>Deskripsi</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-nilai"></tbody>
+              </table>
+            </div>
+            <div class="text-end mt-3">
+              <button class="btn btn-success px-4" onclick="simpanDataNilai()">Simpan Nilai</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="page-rekap-nilai" class="d-none">
+          <div class="card-custom">
+            <h4 class="mb-4">Rekap Seluruh Nilai Ekstrakurikuler</h4>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <select id="filter-kelas-rekap" class="form-select" onchange="renderTabelRekap()">
+                  <option value="Semua">Semua Kelas</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover table-bordered">
+                <thead>
+                  <tr>
+                    <th>Nama Murid</th>
+                    <th>Kelas</th>
+                    <th>Ekstrakurikuler yang Diikuti</th>
+                    <th>Nilai</th>
+                    <th>Deskripsi</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-rekap"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // --- GANTI URL DI BAWAH INI DENGAN URL WEB APP GAS ANDA VAN BARU ---
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzO9jrtOO6b8t7_whuAMArxYD2ilzu85D_sAcUuFNCWQ5vOV3KiCSoBoSExC3x5W9JS/exec';
+    
+    let userData = null;
+    let globalDataMurid = [];
+    let globalRekapData = [];
+
+    async function callAPI(payload) {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return await response.json();
+      } catch (error) {
+        console.error('Fetch error:', error);
+        alert('Terjadi kesalahan koneksi ke server.');
+        return { status: false, pesan: 'Error koneksi' };
+      }
+    }
+
+    function toggleLoading(show) {
+      document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+    }
+
+    async function lakukanLogin() {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      const alertBox = document.getElementById('login-alert');
+      
+      toggleLoading(true);
+      const res = await callAPI({ action: 'login', username: user, password: pass });
+      
+      if (res.status) {
+        userData = res;
+        document.getElementById('nama-pembina').innerText = res.nama;
+        document.getElementById('nama-ekskul').innerText = res.ekskul;
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('dashboard-view').style.display = 'block';
+        loadDataDatabase();
+      } else {
+        toggleLoading(false);
+        alertBox.innerText = res.pesan;
+        alertBox.classList.remove('d-none');
+      }
+    }
+
+    async function loadDataDatabase() {
+      toggleLoading(true);
+      const res = await callAPI({ action: 'getDataMurid', ekskul: userData.ekskul });
+      
+      if (res.status) {
+        globalDataMurid = res.murid;
+        
+        // Isi dropdown filter halaman Data Murid
+        const selectFilter = document.getElementById('filter-kelas');
+        selectFilter.innerHTML = '<option value="Semua">Semua Kelas</option>';
+        res.kelas.forEach(kls => {
+          selectFilter.innerHTML += `<option value="${kls}">${kls}</option>`;
+        });
+
+        renderTabelMurid();
+        renderTabelNilai();
+      } else {
+        alert(res.pesan);
+      }
+      toggleLoading(false);
+    }
+
+    // Fungsi Baru: Memuat data gabungan seluruh ekskul untuk halaman Rekap
+    async function loadRekapData() {
+      toggleLoading(true);
+      const res = await callAPI({ action: 'getRekapNilai' });
+      
+      if (res.status) {
+        globalRekapData = res.rekap;
+        
+        // Isi dropdown filter halaman Rekap Nilai
+        const selectFilter = document.getElementById('filter-kelas-rekap');
+        selectFilter.innerHTML = '<option value="Semua">Semua Kelas</option>';
+        res.kelas.forEach(kls => {
+          selectFilter.innerHTML += `<option value="${kls}">${kls}</option>`;
+        });
+        
+        renderTabelRekap();
+      } else {
+        alert('Gagal mengambil data rekap.');
+      }
+      toggleLoading(false);
+    }
+
+    function renderTabelMurid() {
+      const filter = document.getElementById('filter-kelas').value;
+      const tbody = document.getElementById('tbody-murid');
+      tbody.innerHTML = '';
+
+      globalDataMurid.forEach((m, index) => {
+        if (filter === 'Semua' || m.kelas === filter) {
+          const isChecked = m.ceklis ? 'checked' : '';
+          tbody.innerHTML += `
+            <tr>
+              <td>${m.nama}</td>
+              <td>${m.kelas}</td>
+              <td class="text-center">
+                <input class="form-check-input ceklis-murid" type="checkbox" data-index="${index}" ${isChecked} style="transform: scale(1.3);">
+              </td>
+            </tr>
+          `;
+        }
+      });
+    }
+
+    function renderTabelNilai() {
+      const tbody = document.getElementById('tbody-nilai');
+      tbody.innerHTML = '';
+
+      globalDataMurid.forEach((m, index) => {
+        if (m.ceklis) {
+          tbody.innerHTML += `
+            <tr>
+              <td style="width: 25%">${m.nama}</td>
+              <td style="width: 10%">${m.kelas}</td>
+              <td style="width: 20%">
+                <select class="form-select input-nilai-dropdown" data-index="${index}">
+                  <option value="" ${m.nilai===''?'selected':''}>Pilih Nilai</option>
+                  <option value="Sangat Baik" ${m.nilai==='Sangat Baik'?'selected':''}>Sangat Baik</option>
+                  <option value="Baik" ${m.nilai==='Baik'?'selected':''}>Baik</option>
+                  <option value="Cukup" ${m.nilai==='Cukup'?'selected':''}>Cukup</option>
+                  <option value="Kurang" ${m.nilai==='Kurang'?'selected':''}>Kurang</option>
+                </select>
+              </td>
+              <td style="width: 45%">
+                <input type="text" class="form-control input-deskripsi" data-index="${index}" value="${m.deskripsi}" placeholder="Tulis deskripsi...">
+              </td>
+            </tr>
+          `;
+        }
+      });
+    }
+
+    // Fungsi Baru: Menampilkan tabel rekap nilai multi-baris per ekskul yang diikuti
+    function renderTabelRekap() {
+      const filter = document.getElementById('filter-kelas-rekap').value;
+      const tbody = document.getElementById('tbody-rekap');
+      tbody.innerHTML = '';
+
+      globalRekapData.forEach(r => {
+        if (filter === 'Semua' || r.kelas === filter) {
+          tbody.innerHTML += `
+            <tr>
+              <td>${r.nama}</td>
+              <td>${r.kelas}</td>
+              <td><span class="badge ${r.ekskul === '-' ? 'bg-secondary' : 'bg-danger'}">${r.ekskul}</span></td>
+              <td><strong>${r.nilai}</strong></td>
+              <td><small>${r.deskripsi}</small></td>
+            </tr>
+          `;
+        }
+      });
+    }
+
+    async function simpanDataMurid() {
+      toggleLoading(true);
+      const checkboxes = document.querySelectorAll('.ceklis-murid');
+      checkboxes.forEach(cb => {
+        const idx = cb.getAttribute('data-index');
+        globalDataMurid[idx].ceklis = cb.checked;
+      });
+
+      const dataKirim = globalDataMurid.map(m => ({ baris: m.baris, ceklis: m.ceklis }));
+      const res = await callAPI({ action: 'simpanKeikutsertaan', ekskul: userData.ekskul, dataKirim: dataKirim });
+      
+      toggleLoading(false);
+      if(res.status) {
+        alert(res.pesan);
+        renderTabelNilai();
+      } else {
+        alert('Gagal menyimpan.');
+      }
+    }
+
+    async function simpanDataNilai() {
+      toggleLoading(true);
+      const dropdowns = document.querySelectorAll('.input-nilai-dropdown');
+      const deskripsis = document.querySelectorAll('.input-deskripsi');
+
+      let dataKirim = [];
+      dropdowns.forEach((dd, i) => {
+        const idx = dd.getAttribute('data-index');
+        const desk = deskripsis[i].value;
+        globalDataMurid[idx].nilai = dd.value;
+        globalDataMurid[idx].deskripsi = desk;
+        
+        dataKirim.push({ baris: globalDataMurid[idx].baris, nilai: dd.value, deskripsi: desk });
+      });
+
+      const res = await callAPI({ action: 'simpanNilai', ekskul: userData.ekskul, dataKirim: dataKirim });
+      
+      toggleLoading(false);
+      if(res.status) {
+        alert(res.pesan);
+      } else {
+        alert('Gagal menyimpan.');
+      }
+    }
+
+    function showPage(pageId) {
+      document.getElementById('page-beranda').classList.add('d-none');
+      document.getElementById('page-data-murid').classList.add('d-none');
+      document.getElementById('page-input-nilai').classList.add('d-none');
+      document.getElementById('page-rekap-nilai').classList.add('d-none');
+
+      // Mengatur highlight menu aktif di sidebar
+      document.querySelectorAll('#sidebar-menu .nav-link').forEach(el => el.classList.remove('active'));
+      
+      // Cari elemen menu yang diklik secara aman
+      const activeLink = Array.from(document.querySelectorAll('#sidebar-menu .nav-link')).find(el => el.getAttribute('onclick').includes(pageId));
+      if(activeLink) activeLink.classList.add('active');
+
+      document.getElementById('page-' + pageId).classList.remove('d-none');
+
+      // Jika membuka halaman rekap, panggil data terbaru dari database
+      if (pageId === 'rekap-nilai') {
+        loadRekapData();
+      }
+    }
+
+    function logout() {
+      userData = null;
+      document.getElementById('dashboard-view').style.display = 'none';
+      document.getElementById('login-view').style.display = 'flex';
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('login-alert').classList.add('d-none');
+    }
+  </script>
+</body>
+</html>
