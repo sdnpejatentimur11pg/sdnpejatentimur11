@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Portal Ekstrakurikuler</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <style>
     :root {
       --primary-red: #c62828;
@@ -48,14 +49,22 @@
     <div class="card-login">
       <h4 class="text-center mb-4" style="color: var(--primary-red); font-weight: bold;">Portal Ekstrakurikuler</h4>
       <div id="login-alert" class="alert alert-danger d-none"></div>
+      
       <div class="mb-3">
         <label>Username</label>
-        <input type="text" id="username" class="form-control" placeholder="Masukkan username">
+        <input type="text" id="username" class="form-control" placeholder="Masukkan username" onkeyup="handleEnterKey(event)">
       </div>
+      
       <div class="mb-4">
         <label>Password</label>
-        <input type="password" id="password" class="form-control" placeholder="Masukkan password">
+        <div class="input-group">
+          <input type="password" id="password" class="form-control" placeholder="Masukkan password" onkeyup="handleEnterKey(event)">
+          <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pass" onclick="togglePassword()">
+            <i class="bi bi-eye-slash" id="icon-pass"></i>
+          </button>
+        </div>
       </div>
+      
       <button class="btn btn-red w-100" onclick="lakukanLogin()" id="btn-login">Masuk</button>
     </div>
   </div>
@@ -65,20 +74,20 @@
       <nav class="sidebar col-md-3 col-lg-2 px-3">
         <h5 class="text-center mb-4 border-bottom pb-3">Menu Utama</h5>
         <ul class="nav flex-column" id="sidebar-menu">
-          <li class="nav-item">
+          <li class="nav-item" id="menu-beranda">
             <a class="nav-link active" href="#" onclick="showPage('beranda')">Beranda</a>
           </li>
-          <li class="nav-item">
+          <li class="nav-item" id="menu-data-murid">
             <a class="nav-link" href="#" onclick="showPage('data-murid')">Data Murid</a>
           </li>
-          <li class="nav-item">
+          <li class="nav-item" id="menu-input-nilai">
             <a class="nav-link" href="#" onclick="showPage('input-nilai')">Input Nilai</a>
           </li>
-          <li class="nav-item">
+          <li class="nav-item" id="menu-rekap-nilai">
             <a class="nav-link" href="#" onclick="showPage('rekap-nilai')">Rekap Nilai</a>
           </li>
           <li class="nav-item mt-4">
-            <a class="nav-link text-warning" href="#" onclick="logout()">Keluar</a>
+            <a class="nav-link text-warning" href="#" onclick="logout(false)">Keluar</a>
           </li>
         </ul>
       </nav>
@@ -87,7 +96,7 @@
         <div id="page-beranda">
           <div class="card-custom text-center py-5">
             <h2 style="color: var(--primary-red);">Selamat Datang, <span id="nama-pembina"></span>!</h2>
-            <p class="text-muted">Pembina Ekstrakurikuler <strong id="nama-ekskul"></strong></p>
+            <p class="text-muted">Bapak/Ibu <strong id="nama-ekskul"></strong></p>
           </div>
         </div>
 
@@ -155,8 +164,8 @@
               <table class="table table-hover table-bordered">
                 <thead>
                   <tr>
-                    <th>Nama Murid</th>
-                    <th>Kelas</th>
+                    <th class="text-center">Nama Murid</th>
+                    <th class="text-center">Kelas</th>
                     <th>Ekstrakurikuler yang Diikuti</th>
                     <th>Nilai</th>
                     <th>Deskripsi</th>
@@ -167,18 +176,80 @@
             </div>
           </div>
         </div>
-
       </main>
     </div>
   </div>
 
   <script>
-    // --- GANTI URL DI BAWAH INI DENGAN URL WEB APP GAS ANDA VAN BARU ---
+    // Menggunakan URL Web App GAS Anda secara langsung
     const API_URL = 'https://script.google.com/macros/s/AKfycbzO9jrtOO6b8t7_whuAMArxYD2ilzu85D_sAcUuFNCWQ5vOV3KiCSoBoSExC3x5W9JS/exec';
     
+    // --- KONFIGURASI SESI ---
+    const SESSION_KEY = 'portal_ekskul_session';
+    const TIMEOUT_MS = 30 * 60 * 1000;
+    let inactivityTimer = null;
+
     let userData = null;
     let globalDataMurid = [];
     let globalRekapData = [];
+
+    window.onload = function() {
+      cekSesiAktif();
+    };
+
+    function handleEnterKey(event) {
+      if (event.key === "Enter") lakukanLogin();
+    }
+
+    function togglePassword() {
+      const inputPass = document.getElementById("password");
+      const iconPass = document.getElementById("icon-pass");
+      if (inputPass.type === "password") {
+        inputPass.type = "text";
+        iconPass.classList.replace("bi-eye-slash", "bi-eye");
+      } else {
+        inputPass.type = "password";
+        iconPass.classList.replace("bi-eye", "bi-eye-slash");
+      }
+    }
+
+    function simpanSesi(data) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ user: data, lastActive: Date.now() }));
+    }
+
+    function cekSesiAktif() {
+      const dataTersimpan = localStorage.getItem(SESSION_KEY);
+      if (dataTersimpan) {
+        const sessionData = JSON.parse(dataTersimpan);
+        if ((Date.now() - sessionData.lastActive) < TIMEOUT_MS) {
+          userData = sessionData.user;
+          masukDashboard();
+          return;
+        } else {
+          logout(true); 
+          return;
+        }
+      }
+      document.getElementById('login-view').style.display = 'flex';
+      document.getElementById('dashboard-view').style.display = 'none';
+    }
+
+    function resetWaktuAktivitas() {
+      if (userData) {
+        const dataTersimpan = localStorage.getItem(SESSION_KEY);
+        if (dataTersimpan) {
+          const sessionData = JSON.parse(dataTersimpan);
+          sessionData.lastActive = Date.now();
+          localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+        }
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => { if (userData) logout(true); }, TIMEOUT_MS);
+      }
+    }
+
+    ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
+      document.addEventListener(evt, resetWaktuAktivitas, { passive: true });
+    });
 
     async function callAPI(payload) {
       try {
@@ -189,7 +260,6 @@
         });
         return await response.json();
       } catch (error) {
-        console.error('Fetch error:', error);
         alert('Terjadi kesalahan koneksi ke server.');
         return { status: false, pesan: 'Error koneksi' };
       }
@@ -204,16 +274,14 @@
       const pass = document.getElementById('password').value;
       const alertBox = document.getElementById('login-alert');
       
+      if(!user || !pass) return;
       toggleLoading(true);
       const res = await callAPI({ action: 'login', username: user, password: pass });
       
       if (res.status) {
         userData = res;
-        document.getElementById('nama-pembina').innerText = res.nama;
-        document.getElementById('nama-ekskul').innerText = res.ekskul;
-        document.getElementById('login-view').style.display = 'none';
-        document.getElementById('dashboard-view').style.display = 'block';
-        loadDataDatabase();
+        simpanSesi(userData);
+        masukDashboard();
       } else {
         toggleLoading(false);
         alertBox.innerText = res.pesan;
@@ -221,20 +289,50 @@
       }
     }
 
+    // --- PEMBARUAN UTAMA: Pengaturan Hak Akses Menu Berdasarkan Role ---
+    function masukDashboard() {
+      document.getElementById('nama-pembina').innerText = userData.nama;
+      
+      const menuDataMurid = document.getElementById('menu-data-murid');
+      const menuInputNilai = document.getElementById('menu-input-nilai');
+      const menuRekapNilai = document.getElementById('menu-rekap-nilai');
+
+      if (userData.ekskul === 'Admin') {
+        // Jika login sebagai Admin Rekap
+        document.getElementById('nama-ekskul').innerText = "Wali Kelas";
+        menuDataMurid.classList.add('d-none');
+        menuInputNilai.classList.add('d-none');
+        menuRekapNilai.classList.remove('d-none');
+        
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('dashboard-view').style.display = 'block';
+        document.getElementById('login-alert').classList.add('d-none');
+        resetWaktuAktivitas();
+        toggleLoading(false);
+      } else {
+        // Jika login sebagai Pembina Ekskul Biasa
+        document.getElementById('nama-ekskul').innerText = "Pembina Ekskul " + userData.ekskul;
+        menuDataMurid.classList.remove('d-none');
+        menuInputNilai.classList.remove('d-none');
+        menuRekapNilai.classList.add('d-none');
+        
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('dashboard-view').style.display = 'block';
+        document.getElementById('login-alert').classList.add('d-none');
+        resetWaktuAktivitas();
+        loadDataDatabase(); // Hanya memuat database murid jika user adalah pembina
+      }
+      showPage('beranda');
+    }
+
     async function loadDataDatabase() {
       toggleLoading(true);
       const res = await callAPI({ action: 'getDataMurid', ekskul: userData.ekskul });
-      
       if (res.status) {
         globalDataMurid = res.murid;
-        
-        // Isi dropdown filter halaman Data Murid
         const selectFilter = document.getElementById('filter-kelas');
         selectFilter.innerHTML = '<option value="Semua">Semua Kelas</option>';
-        res.kelas.forEach(kls => {
-          selectFilter.innerHTML += `<option value="${kls}">${kls}</option>`;
-        });
-
+        res.kelas.forEach(kls => selectFilter.innerHTML += `<option value="${kls}">${kls}</option>`);
         renderTabelMurid();
         renderTabelNilai();
       } else {
@@ -243,21 +341,14 @@
       toggleLoading(false);
     }
 
-    // Fungsi Baru: Memuat data gabungan seluruh ekskul untuk halaman Rekap
     async function loadRekapData() {
       toggleLoading(true);
       const res = await callAPI({ action: 'getRekapNilai' });
-      
       if (res.status) {
         globalRekapData = res.rekap;
-        
-        // Isi dropdown filter halaman Rekap Nilai
         const selectFilter = document.getElementById('filter-kelas-rekap');
         selectFilter.innerHTML = '<option value="Semua">Semua Kelas</option>';
-        res.kelas.forEach(kls => {
-          selectFilter.innerHTML += `<option value="${kls}">${kls}</option>`;
-        });
-        
+        res.kelas.forEach(kls => selectFilter.innerHTML += `<option value="${kls}">${kls}</option>`);
         renderTabelRekap();
       } else {
         alert('Gagal mengambil data rekap.');
@@ -269,19 +360,13 @@
       const filter = document.getElementById('filter-kelas').value;
       const tbody = document.getElementById('tbody-murid');
       tbody.innerHTML = '';
-
       globalDataMurid.forEach((m, index) => {
         if (filter === 'Semua' || m.kelas === filter) {
           const isChecked = m.ceklis ? 'checked' : '';
-          tbody.innerHTML += `
-            <tr>
-              <td>${m.nama}</td>
-              <td>${m.kelas}</td>
-              <td class="text-center">
-                <input class="form-check-input ceklis-murid" type="checkbox" data-index="${index}" ${isChecked} style="transform: scale(1.3);">
-              </td>
-            </tr>
-          `;
+          tbody.innerHTML += `<tr>
+            <td>${m.nama}</td><td>${m.kelas}</td>
+            <td class="text-center"><input class="form-check-input ceklis-murid" type="checkbox" data-index="${index}" ${isChecked} style="transform: scale(1.3);"></td>
+          </tr>`;
         }
       });
     }
@@ -289,95 +374,95 @@
     function renderTabelNilai() {
       const tbody = document.getElementById('tbody-nilai');
       tbody.innerHTML = '';
-
       globalDataMurid.forEach((m, index) => {
         if (m.ceklis) {
-          tbody.innerHTML += `
-            <tr>
-              <td style="width: 25%">${m.nama}</td>
-              <td style="width: 10%">${m.kelas}</td>
-              <td style="width: 20%">
-                <select class="form-select input-nilai-dropdown" data-index="${index}">
-                  <option value="" ${m.nilai===''?'selected':''}>Pilih Nilai</option>
-                  <option value="Sangat Baik" ${m.nilai==='Sangat Baik'?'selected':''}>Sangat Baik</option>
-                  <option value="Baik" ${m.nilai==='Baik'?'selected':''}>Baik</option>
-                  <option value="Cukup" ${m.nilai==='Cukup'?'selected':''}>Cukup</option>
-                  <option value="Kurang" ${m.nilai==='Kurang'?'selected':''}>Kurang</option>
-                </select>
-              </td>
-              <td style="width: 45%">
-                <input type="text" class="form-control input-deskripsi" data-index="${index}" value="${m.deskripsi}" placeholder="Tulis deskripsi...">
-              </td>
-            </tr>
-          `;
+          tbody.innerHTML += `<tr>
+            <td style="width: 25%">${m.nama}</td><td style="width: 10%">${m.kelas}</td>
+            <td style="width: 20%">
+              <select class="form-select input-nilai-dropdown" data-index="${index}">
+                <option value="" ${m.nilai===''?'selected':''}>Pilih Nilai</option>
+                <option value="Sangat Baik" ${m.nilai==='Sangat Baik'?'selected':''}>Sangat Baik</option>
+                <option value="Baik" ${m.nilai==='Baik'?'selected':''}>Baik</option>
+                <option value="Cukup" ${m.nilai==='Cukup'?'selected':''}>Cukup</option>
+                <option value="Kurang" ${m.nilai==='Kurang'?'selected':''}>Kurang</option>
+              </select>
+            </td>
+            <td style="width: 45%"><input type="text" class="form-control input-deskripsi" data-index="${index}" value="${m.deskripsi}" placeholder="Tulis deskripsi..."></td>
+          </tr>`;
         }
       });
     }
 
-    // Fungsi Baru: Menampilkan tabel rekap nilai multi-baris per ekskul yang diikuti
+    function getWarnaEkskul(namaEkskul) {
+      const warna = {
+        'Angklung': '#FF9800', 'Baca Tulis Quran': '#4CAF50', 'English Club': '#2196F3',
+        'Futsal': '#03A9F4', 'Marawis': '#8BC34A', 'Palang Merah Remaja': '#F44336',
+        'Pencak Silat': '#607D8B', 'Pramuka': '#8D6E63', 'Tari': '#E91E63'
+      };
+      return warna[namaEkskul] || '#6c757d';
+    }
+
     function renderTabelRekap() {
       const filter = document.getElementById('filter-kelas-rekap').value;
       const tbody = document.getElementById('tbody-rekap');
       tbody.innerHTML = '';
 
-      globalRekapData.forEach(r => {
-        if (filter === 'Semua' || r.kelas === filter) {
-          tbody.innerHTML += `
-            <tr>
-              <td>${r.nama}</td>
-              <td>${r.kelas}</td>
-              <td><span class="badge ${r.ekskul === '-' ? 'bg-secondary' : 'bg-danger'}">${r.ekskul}</span></td>
-              <td><strong>${r.nilai}</strong></td>
-              <td><small>${r.deskripsi}</small></td>
-            </tr>
-          `;
+      const filteredData = globalRekapData.filter(r => filter === 'Semua' || r.kelas === filter);
+      const groupedData = [];
+      let namaSaatIni = null;
+      let grupSaatIni = null;
+
+      filteredData.forEach(r => {
+        if (r.nama !== namaSaatIni) {
+          namaSaatIni = r.nama;
+          grupSaatIni = { nama: r.nama, kelas: r.kelas, daftarEkskul: [] };
+          groupedData.push(grupSaatIni);
         }
+        grupSaatIni.daftarEkskul.push({ ekskul: r.ekskul, nilai: r.nilai, deskripsi: r.deskripsi });
+      });
+
+      groupedData.forEach(grup => {
+        const jumlahEkskul = grup.daftarEkskul.length;
+        grup.daftarEkskul.forEach((eks, index) => {
+          const tr = document.createElement('tr');
+          if (index === 0) {
+            tr.innerHTML += `<td rowspan="${jumlahEkskul}" class="align-middle fw-bold">${grup.nama}</td>`;
+            tr.innerHTML += `<td rowspan="${jumlahEkskul}" class="align-middle text-center">${grup.kelas}</td>`;
+          }
+          const warnaBadge = getWarnaEkskul(eks.ekskul);
+          tr.innerHTML += `<td><span class="badge" style="background-color: ${warnaBadge}; padding: 8px 12px;">${eks.ekskul}</span></td>`;
+          tr.innerHTML += `<td><strong>${eks.nilai}</strong></td>`;
+          tr.innerHTML += `<td><small>${eks.deskripsi}</small></td>`;
+          tbody.appendChild(tr);
+        });
       });
     }
 
     async function simpanDataMurid() {
       toggleLoading(true);
       const checkboxes = document.querySelectorAll('.ceklis-murid');
-      checkboxes.forEach(cb => {
-        const idx = cb.getAttribute('data-index');
-        globalDataMurid[idx].ceklis = cb.checked;
-      });
-
+      checkboxes.forEach(cb => { globalDataMurid[cb.getAttribute('data-index')].ceklis = cb.checked; });
       const dataKirim = globalDataMurid.map(m => ({ baris: m.baris, ceklis: m.ceklis }));
       const res = await callAPI({ action: 'simpanKeikutsertaan', ekskul: userData.ekskul, dataKirim: dataKirim });
-      
       toggleLoading(false);
-      if(res.status) {
-        alert(res.pesan);
-        renderTabelNilai();
-      } else {
-        alert('Gagal menyimpan.');
-      }
+      if(res.status) { alert(res.pesan); renderTabelNilai(); } else { alert('Gagal menyimpan.'); }
     }
 
     async function simpanDataNilai() {
       toggleLoading(true);
       const dropdowns = document.querySelectorAll('.input-nilai-dropdown');
       const deskripsis = document.querySelectorAll('.input-deskripsi');
-
       let dataKirim = [];
       dropdowns.forEach((dd, i) => {
         const idx = dd.getAttribute('data-index');
         const desk = deskripsis[i].value;
         globalDataMurid[idx].nilai = dd.value;
         globalDataMurid[idx].deskripsi = desk;
-        
         dataKirim.push({ baris: globalDataMurid[idx].baris, nilai: dd.value, deskripsi: desk });
       });
-
       const res = await callAPI({ action: 'simpanNilai', ekskul: userData.ekskul, dataKirim: dataKirim });
-      
       toggleLoading(false);
-      if(res.status) {
-        alert(res.pesan);
-      } else {
-        alert('Gagal menyimpan.');
-      }
+      if(res.status) { alert(res.pesan); } else { alert('Gagal menyimpan.'); }
     }
 
     function showPage(pageId) {
@@ -385,29 +470,32 @@
       document.getElementById('page-data-murid').classList.add('d-none');
       document.getElementById('page-input-nilai').classList.add('d-none');
       document.getElementById('page-rekap-nilai').classList.add('d-none');
-
-      // Mengatur highlight menu aktif di sidebar
-      document.querySelectorAll('#sidebar-menu .nav-link').forEach(el => el.classList.remove('active'));
       
-      // Cari elemen menu yang diklik secara aman
+      document.querySelectorAll('#sidebar-menu .nav-link').forEach(el => el.classList.remove('active'));
       const activeLink = Array.from(document.querySelectorAll('#sidebar-menu .nav-link')).find(el => el.getAttribute('onclick').includes(pageId));
       if(activeLink) activeLink.classList.add('active');
-
+      
       document.getElementById('page-' + pageId).classList.remove('d-none');
-
-      // Jika membuka halaman rekap, panggil data terbaru dari database
-      if (pageId === 'rekap-nilai') {
-        loadRekapData();
-      }
+      if (pageId === 'rekap-nilai') loadRekapData();
     }
 
-    function logout() {
+    function logout(karenaTimeout = false) {
       userData = null;
+      localStorage.removeItem(SESSION_KEY);
+      clearTimeout(inactivityTimer);
       document.getElementById('dashboard-view').style.display = 'none';
       document.getElementById('login-view').style.display = 'flex';
+      document.getElementById('password').type = 'password';
+      document.getElementById('icon-pass').classList.replace("bi-eye", "bi-eye-slash");
       document.getElementById('username').value = '';
       document.getElementById('password').value = '';
-      document.getElementById('login-alert').classList.add('d-none');
+      const alertBox = document.getElementById('login-alert');
+      if (karenaTimeout) {
+        alertBox.innerText = 'Sesi Anda telah berakhir karena tidak ada aktivitas (30 menit). Silakan login kembali.';
+        alertBox.classList.remove('d-none');
+      } else {
+        alertBox.classList.add('d-none');
+      }
     }
   </script>
 </body>
