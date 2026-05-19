@@ -131,6 +131,34 @@
         <div id="page-input-nilai" class="d-none">
           <div class="card-custom">
             <h4 class="mb-4">Input Nilai Ekstrakurikuler</h4>
+            
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label text-muted small">Filter Kelas:</label>
+                <select id="filter-kelas-nilai" class="form-select border-primary" onchange="renderTabelNilai()">
+                  <option value="Semua">Semua Kelas</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3 p-3 bg-light rounded border align-items-center">
+              <div class="col-md-auto fw-bold text-danger">
+                Isi Semua Nilai Sekaligus:
+              </div>
+              <div class="col-md-3">
+                <select id="bulk-nilai" class="form-select border-danger">
+                  <option value="">-- Pilih Nilai --</option>
+                  <option value="Sangat Baik">Sangat Baik</option>
+                  <option value="Baik">Baik</option>
+                  <option value="Cukup">Cukup</option>
+                  <option value="Kurang">Kurang</option>
+                </select>
+              </div>
+              <div class="col-md-auto">
+                <button class="btn btn-danger" onclick="terapkanSemuaNilai()">Terapkan ke Layar</button>
+              </div>
+            </div>
+
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead>
@@ -181,7 +209,7 @@
   </div>
 
   <script>
-    // Menggunakan URL Web App GAS Anda secara langsung
+    // URL Web App GAS Anda
     const API_URL = 'https://script.google.com/macros/s/AKfycbzO9jrtOO6b8t7_whuAMArxYD2ilzu85D_sAcUuFNCWQ5vOV3KiCSoBoSExC3x5W9JS/exec';
     
     // --- KONFIGURASI SESI ---
@@ -289,7 +317,6 @@
       }
     }
 
-    // --- PEMBARUAN UTAMA: Pengaturan Hak Akses Menu Berdasarkan Role ---
     function masukDashboard() {
       document.getElementById('nama-pembina').innerText = userData.nama;
       
@@ -298,7 +325,6 @@
       const menuRekapNilai = document.getElementById('menu-rekap-nilai');
 
       if (userData.ekskul === 'Admin') {
-        // Jika login sebagai Admin Rekap
         document.getElementById('nama-ekskul').innerText = "Wali Kelas";
         menuDataMurid.classList.add('d-none');
         menuInputNilai.classList.add('d-none');
@@ -310,7 +336,6 @@
         resetWaktuAktivitas();
         toggleLoading(false);
       } else {
-        // Jika login sebagai Pembina Ekskul Biasa
         document.getElementById('nama-ekskul').innerText = "Pembina Ekskul " + userData.ekskul;
         menuDataMurid.classList.remove('d-none');
         menuInputNilai.classList.remove('d-none');
@@ -320,7 +345,7 @@
         document.getElementById('dashboard-view').style.display = 'block';
         document.getElementById('login-alert').classList.add('d-none');
         resetWaktuAktivitas();
-        loadDataDatabase(); // Hanya memuat database murid jika user adalah pembina
+        loadDataDatabase();
       }
       showPage('beranda');
     }
@@ -330,9 +355,19 @@
       const res = await callAPI({ action: 'getDataMurid', ekskul: userData.ekskul });
       if (res.status) {
         globalDataMurid = res.murid;
-        const selectFilter = document.getElementById('filter-kelas');
-        selectFilter.innerHTML = '<option value="Semua">Semua Kelas</option>';
-        res.kelas.forEach(kls => selectFilter.innerHTML += `<option value="${kls}">${kls}</option>`);
+        
+        // Isi pilihan kelas untuk halaman Data Murid dan Input Nilai
+        const selectFilterMurid = document.getElementById('filter-kelas');
+        const selectFilterNilai = document.getElementById('filter-kelas-nilai');
+        
+        selectFilterMurid.innerHTML = '<option value="Semua">Semua Kelas</option>';
+        selectFilterNilai.innerHTML = '<option value="Semua">Semua Kelas</option>';
+        
+        res.kelas.forEach(kls => {
+          selectFilterMurid.innerHTML += `<option value="${kls}">${kls}</option>`;
+          selectFilterNilai.innerHTML += `<option value="${kls}">${kls}</option>`;
+        });
+        
         renderTabelMurid();
         renderTabelNilai();
       } else {
@@ -372,10 +407,13 @@
     }
 
     function renderTabelNilai() {
+      const filter = document.getElementById('filter-kelas-nilai').value;
       const tbody = document.getElementById('tbody-nilai');
       tbody.innerHTML = '';
+      
       globalDataMurid.forEach((m, index) => {
-        if (m.ceklis) {
+        // Tampilkan hanya murid yang di-ceklis DAN sesuai dengan filter kelas
+        if (m.ceklis && (filter === 'Semua' || m.kelas === filter)) {
           tbody.innerHTML += `<tr>
             <td style="width: 25%">${m.nama}</td><td style="width: 10%">${m.kelas}</td>
             <td style="width: 20%">
@@ -390,6 +428,23 @@
             <td style="width: 45%"><input type="text" class="form-control input-deskripsi" data-index="${index}" value="${m.deskripsi}" placeholder="Tulis deskripsi..."></td>
           </tr>`;
         }
+      });
+    }
+
+    function terapkanSemuaNilai() {
+      const bulkValue = document.getElementById('bulk-nilai').value;
+      if (!bulkValue) {
+        alert('Pilih nilai pada kotak terlebih dahulu!');
+        return;
+      }
+      
+      const dropdowns = document.querySelectorAll('.input-nilai-dropdown');
+      dropdowns.forEach(dd => {
+        dd.value = bulkValue;
+        
+        // Memperbarui state memori agar saat ditekan simpan data terbaca
+        const idx = dd.getAttribute('data-index');
+        globalDataMurid[idx].nilai = bulkValue;
       });
     }
 
@@ -450,16 +505,27 @@
 
     async function simpanDataNilai() {
       toggleLoading(true);
+      
+      // Ambil seluruh input yang muncul di layar (sesuai filter kelas)
       const dropdowns = document.querySelectorAll('.input-nilai-dropdown');
       const deskripsis = document.querySelectorAll('.input-deskripsi');
-      let dataKirim = [];
+      
+      // Update globalDataMurid dengan inputan terbaru di layar sebelum dikirim
       dropdowns.forEach((dd, i) => {
         const idx = dd.getAttribute('data-index');
-        const desk = deskripsis[i].value;
         globalDataMurid[idx].nilai = dd.value;
-        globalDataMurid[idx].deskripsi = desk;
-        dataKirim.push({ baris: globalDataMurid[idx].baris, nilai: dd.value, deskripsi: desk });
+        globalDataMurid[idx].deskripsi = deskripsis[i].value;
       });
+
+      // Kita kirim seluruh data (termasuk kelas lain yang sedang disembunyikan filter)
+      // supaya kelas lain tidak terhapus saat kelas A sedang disimpan.
+      let dataKirim = [];
+      globalDataMurid.forEach(m => {
+        if(m.ceklis) { // Hanya yang ikut ekskul
+          dataKirim.push({ baris: m.baris, nilai: m.nilai, deskripsi: m.deskripsi });
+        }
+      });
+
       const res = await callAPI({ action: 'simpanNilai', ekskul: userData.ekskul, dataKirim: dataKirim });
       toggleLoading(false);
       if(res.status) { alert(res.pesan); } else { alert('Gagal menyimpan.'); }
