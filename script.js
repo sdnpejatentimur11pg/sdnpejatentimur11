@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchPrestasi();
     fetchGaleri();
     fetchMessages();
+    fetchPengumuman();
     updateVisitorCount();
     setupGuestbookForm();
 });
@@ -507,3 +508,74 @@ window.openLihatGaleri = function(index) {
     new bootstrap.Modal(document.getElementById('galeriLihatModal')).show();
 }
 
+// --- FUNGSI LOAD PENGUMUMAN EKSTERNAL ---
+async function fetchPengumuman() {
+    const container = document.getElementById('pengumuman');
+    if (!container) return;
+
+    try {
+        const response = await fetch('pengumuman.html');
+        if (response.ok) {
+            const html = await response.text();
+            container.innerHTML = html;
+            
+            // 1. Bangunkan Bootstrap Carousel agar otomatis slide tiap 5 detik
+            const carouselEl = document.getElementById('carouselPengumuman');
+            if(carouselEl) {
+                new bootstrap.Carousel(carouselEl, {
+                    interval: 5000,
+                    ride: 'carousel'
+                });
+            }
+
+            // 2. Jalankan mesin waktu mundur
+            jalankanWaktuMundur();
+        }
+    } catch (e) {
+        console.error("Gagal memuat modul pengumuman:", e);
+    }
+}
+
+// --- FUNGSI WAKTU MUNDUR ---
+function jalankanWaktuMundur() {
+    // Target: 2 Juni 2026, 10:00:00 WIB
+    // (Bulan di Javascript dimulai dari 0. Jadi 5 = Juni)
+    const targetDate = new Date(2026, 5, 2, 10, 0, 0).getTime(); 
+
+    const interval = setInterval(function() {
+        const now = new Date().getTime();
+        const distance = targetDate - now;
+
+        // Jika waktu sudah habis
+        if (distance < 0) {
+            clearInterval(interval);
+            
+            const cdContainer = document.getElementById("countdown-container");
+            const pWait = document.getElementById("pengumuman-wait");
+            const btnAction = document.getElementById("pengumuman-action");
+            
+            // Sembunyikan timer, tampilkan tombol login
+            if(cdContainer) cdContainer.classList.add("d-none");
+            if(pWait) pWait.classList.add("d-none");
+            if(btnAction) btnAction.classList.remove("d-none");
+            return;
+        }
+
+        // Kalkulasi sisa hari, jam, menit, detik
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Lempar angka ke layar (dengan tambahan angka 0 di depan jika di bawah 10)
+        const elHari = document.getElementById("cd-hari");
+        const elJam = document.getElementById("cd-jam");
+        const elMenit = document.getElementById("cd-menit");
+        const elDetik = document.getElementById("cd-detik");
+
+        if(elHari) elHari.innerText = String(days).padStart(2, '0');
+        if(elJam) elJam.innerText = String(hours).padStart(2, '0');
+        if(elMenit) elMenit.innerText = String(minutes).padStart(2, '0');
+        if(elDetik) elDetik.innerText = String(seconds).padStart(2, '0');
+    }, 1000); // Update setiap 1000 milidetik (1 detik)
+}
